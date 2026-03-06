@@ -39,7 +39,10 @@ async function fetchCSV(url) {
 async function syncModelos() {
   console.log('Syncing modelos...')
   const rows = await fetchCSV(MODELOS_CSV_URL)
-  const data = rows.map((r) => ({ ...r, client_id: CLIENT_ID }))
+  const deduped = [...new Map(rows.map((r) => [r.modelo_id, r])).values()]
+  if (deduped.length < rows.length)
+    console.warn(`  Skipped ${rows.length - deduped.length} duplicate modelo_id rows`)
+  const data = deduped.map((r) => ({ ...r, client_id: CLIENT_ID }))
 
   const { error } = await supabase
     .from('modelos')
@@ -52,7 +55,11 @@ async function syncModelos() {
 async function syncUnidades() {
   console.log('Syncing unidades...')
   const rows = await fetchCSV(UNIDADES_CSV_URL)
-  const data = rows.map((r) => ({ ...r, client_id: CLIENT_ID }))
+  // Deduplicate by unidad_id (last row wins)
+  const deduped = [...new Map(rows.map((r) => [r.unidad_id, r])).values()]
+  if (deduped.length < rows.length)
+    console.warn(`  Skipped ${rows.length - deduped.length} duplicate unidad_id rows`)
+  const data = deduped.map((r) => ({ ...r, client_id: CLIENT_ID }))
 
   const { error } = await supabase
     .from('unidades')
