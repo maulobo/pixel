@@ -19,7 +19,9 @@ if (!MODELOS_CSV_URL || !UNIDADES_CSV_URL || !BANNERS_CSV_URL) {
   process.exit(1)
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
 
 async function fetchCSV(url) {
   const res = await fetch(url)
