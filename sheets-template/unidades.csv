@@ -1,0 +1,13 @@
+unidad_id,modelo_id,color,capacidad,bateria,condicion,precio,descripcion_particular,disponible,imagen_url
+iph12-001,iphone-12,Rojo,64GB,78,Bueno,480000,"Rayones menores en la pantalla visibles con luz directa. Funciona perfecto.",TRUE,https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-12-red-select?wid=940&hei=1112&fmt=png-alpha
+iph13p-001,iphone-13-pro,Azul Sierra,256GB,87,Muy bueno,850000,"Rasguño leve en el marco lateral izquierdo, pantalla perfecta.",TRUE,https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-13-pro-blue-select?wid=940&hei=1112&fmt=png-alpha
+iph14-001,iphone-14,Medianoche,128GB,91,Excelente,720000,"Sin marcas, como nuevo. Cargador incluido.",TRUE,https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-14-midnight-select?wid=940&hei=1112&fmt=png-alpha
+iph15pm-001,iphone-15-pro-max,Titanio Natural,512GB,95,Excelente,1450000,"Impecable. Comprado hace 4 meses. Con funda y vidrio templado.",TRUE,https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-naturaltitanium-select?wid=940&hei=1112&fmt=png-alpha
+mbam2-001,macbook-air-m2,Plata,256GB SSD · 8GB RAM,92,Muy bueno,1200000,"Pequeña marca en la tapa exterior, no afecta el uso.",TRUE,https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-midnight-select-20220606?wid=904&hei=840&fmt=jpeg
+mbpm3-001,macbook-pro-m3,Gris Espacial,512GB SSD · 16GB RAM,88,Excelente,2100000,"Sin marcas. Año 2024. Incluye cargador 96W.",TRUE,https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-spacegray-select-202310?wid=904&hei=840&fmt=jpeg
+jblflip6-001,jbl-flip6,Azul,N/A,95,Excelente,85000,"Sin uso. Caja sellada importada. Garantia 6 meses.",TRUE,https://example.com/jbl-flip6-azul.png
+jblflip6-002,jbl-flip6,Negro,N/A,82,Muy bueno,70000,"Uso leve. Sin rayones. Con cable de carga.",TRUE,https://example.com/jbl-flip6-negro.png
+jblcharge5-001,jbl-charge5,Gris,N/A,90,Excelente,120000,"Como nuevo. Importado. Incluye cable USB-C.",TRUE,https://example.com/jbl-charge5-gris.png
+ps5ctrl-001,ps5-dualsense,Blanco,N/A,98,Excelente,95000,"Original Sony. Sin uso visible. Con cable USB-C.",TRUE,https://example.com/dualsense-blanco.png
+ps5ctrl-002,ps5-dualsense,Midnight Black,N/A,87,Muy bueno,80000,"Grip levemente desgastado. Funciona perfecto.",TRUE,https://example.com/dualsense-black.png
+xboxctrl-001,xbox-series,Carbon Black,N/A,93,Excelente,75000,"Original Microsoft. Importado. Sin uso.",TRUE,https://example.com/xbox-carbon.png

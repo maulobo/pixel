@@ -1,0 +1,34 @@
+name: Sync Sheets to Supabase
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # cada 30 minutos
+  workflow_dispatch:          # trigger manual desde GitHub
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run sync
+        run: node scripts/sync.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          CLIENT_ID: ${{ secrets.PIXEL_CLIENT_ID }}
+          MODELOS_CSV_URL: ${{ secrets.MODELOS_CSV_URL }}
+          UNIDADES_CSV_URL: ${{ secrets.UNIDADES_CSV_URL }}
+          BANNERS_CSV_URL: ${{ secrets.BANNERS_CSV_URL }}

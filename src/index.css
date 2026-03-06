@@ -1,0 +1,111 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap");
+@import "tailwindcss";
+
+:root {
+  --bg: #f2f6ff;
+  --bg-soft: #e9f0ff;
+  --text: #0f172a;
+  --muted: #58657f;
+  --card: rgba(255, 255, 255, 0.72);
+  --line: rgba(156, 177, 226, 0.52);
+  --primary: #0a84ff;
+  --primary-strong: #0066d6;
+  --hero-glow: rgba(10, 132, 255, 0.35);
+  --shadow-soft: 0 20px 44px -28px rgba(23, 39, 78, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(
+      1200px 640px at -8% -12%,
+      rgba(10, 132, 255, 0.26),
+      transparent 58%
+    ),
+    radial-gradient(
+      980px 520px at 108% -4%,
+      rgba(38, 208, 255, 0.2),
+      transparent 56%
+    ),
+    linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 40%, #f6f9ff 100%);
+}
+
+.brand-heading {
+  font-family: "Sora", sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.surface-card {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(246, 250, 255, 0.62) 100%
+  );
+  border: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(48px);
+  pointer-events: none;
+  animation: float-orb 8s ease-in-out infinite;
+}
+
+.animate-rise {
+  animation: rise-in 0.65s ease-out both;
+}
+
+.stagger-1 {
+  animation-delay: 0.06s;
+}
+
+.stagger-2 {
+  animation-delay: 0.14s;
+}
+
+.stagger-3 {
+  animation-delay: 0.22s;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes float-orb {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
