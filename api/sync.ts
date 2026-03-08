@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js'
 import Papa from 'papaparse'
 
 const DEBOUNCE_MS = 2 * 60 * 1000
-const lastSyncTime: Record<string, number> = {}
 
 async function fetchCSV(url: string): Promise<Record<string, unknown>[]> {
   const res = await fetch(url)
@@ -48,12 +47,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('modelos_csv_url, unidades_csv_url, banners_csv_url')
+    .select('modelos_csv_url, unidades_csv_url, banners_csv_url, last_synced_at')
     .eq('id', clientId)
     .single()
 
   if (clientError || !client) {
     return res.status(404).json({ error: 'Client not found', detail: clientError?.message })
+  }
+
+  // Debounce via DB — más confiable que in-memory en serverless
+  if (client.last_synced_at) {
+    const elapsed = Date.now() - new Date(client.last_synced_at).getTime()
+    if (elapsed < DEBOUNCE_MS) {
+      return res.status(200).json({ status: 'debounced', next_sync_in_seconds: Math.ceil((DEBOUNCE_MS - elapsed) / 1000) })
+    }
   }
 
   try {
@@ -70,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .map((r, i) => ({ ...r, client_id: clientId, orden: i }))
     if (banners.length > 0) await supabase.from('banners').insert(banners)
 
-    lastSyncTime[clientId] = Date.now()
+    await supabase.from('clients').update({ last_synced_at: new Date().toISOString() }).eq('id', clientId)
     return res.status(200).json({ status: 'ok', modelos: modelos.length, unidades: unidades.length, banners: banners.length })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
