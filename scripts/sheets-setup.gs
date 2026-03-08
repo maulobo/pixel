@@ -25,6 +25,13 @@ var HEADERS = {
 var TIPOS_VALIDOS     = ['iPhone','Mac','iPad','Accesorio']
 var CONDICION_VALIDA  = ['Nuevo','Excelente','Muy bueno','Bueno']
 
+// ─── SUPABASE CONFIG ─────────────────────────────────────────
+// Completar con tus valores (anon key — es pública, no hay drama)
+var SUPABASE_URL  = 'https://vytnhbxioqwzgtqlgbkh.supabase.co'
+var SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dG5oYnhpb3F3emd0cWxnYmtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDk0MzksImV4cCI6MjA4ODM4NTQzOX0.Cb_Vq_ZwsTxoH2TLc-rEqsBU_ztnNidoOgEaXvhoCI8'
+var CLIENT_ID     = 'cb991593-cb0e-4a25-860b-6962b7c1a27e'
+var DEBOUNCE_MIN  = 2  // minutos de inactividad antes de sincronizar
+
 // =============================================================
 // TRIGGERS PRINCIPALES
 // =============================================================
@@ -44,6 +51,143 @@ function onEdit(e) {
   }
 
   validateCell(e)
+  scheduleSyncDebounced()
+}
+
+// =============================================================
+// DEBOUNCE SYNC
+// =============================================================
+
+function scheduleSyncDebounced() {
+  var props = PropertiesService.getScriptProperties()
+
+  // Guardar timestamp de última edición
+  props.setProperty('lastEditTime', Date.now().toString())
+
+  // Eliminar triggers de sync anteriores
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'runDebouncedSync') {
+      ScriptApp.deleteTrigger(t)
+    }
+  })
+
+  // Crear nuevo trigger en DEBOUNCE_MIN minutos
+  ScriptApp.newTrigger('runDebouncedSync')
+    .timeBased()
+    .after(DEBOUNCE_MIN * 60 * 1000)
+    .create()
+}
+
+function runDebouncedSync() {
+  // Eliminar este trigger (se autodestruye)
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'runDebouncedSync') {
+      ScriptApp.deleteTrigger(t)
+    }
+  })
+
+  var props     = PropertiesService.getScriptProperties()
+  var lastEdit  = parseInt(props.getProperty('lastEditTime') || '0')
+  var elapsed   = Date.now() - lastEdit
+
+  // Si hubo ediciones en los últimos DEBOUNCE_MIN minutos, no sincronizar
+  if (elapsed < DEBOUNCE_MIN * 60 * 1000) return
+
+  syncToSupabase()
+}
+
+// =============================================================
+// SYNC A SUPABASE
+// =============================================================
+
+function syncToSupabase() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  syncSheet(ss, 'modelos',  'modelos',  'modelo_id')
+  syncSheet(ss, 'unidades', 'unidades', 'unidad_id')
+  syncBanners(ss)
+}
+
+function syncSheet(ss, sheetName, table, idCol) {
+  var sheet   = ss.getSheetByName(sheetName)
+  if (!sheet || sheet.getLastRow() < 2) return
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+  var rows    = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues()
+
+  // Construir array de objetos + deduplicar por idCol
+  var idIdx = headers.indexOf(idCol)
+  var seen  = {}
+  var data  = []
+  rows.forEach(function(row) {
+    var id = String(row[idIdx]).trim()
+    if (!id || seen[id]) return
+    seen[id] = true
+    var obj = { client_id: CLIENT_ID }
+    headers.forEach(function(h, i) { obj[h] = row[i] })
+    data.push(obj)
+  })
+
+  if (data.length === 0) return
+
+  supabaseUpsert(table, data, idCol + ',client_id')
+}
+
+function syncBanners(ss) {
+  var sheet = ss.getSheetByName('banners')
+  if (!sheet || sheet.getLastRow() < 2) return
+
+  // Borrar banners del cliente y reinsertar
+  supabaseDelete('banners', CLIENT_ID)
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+  var rows    = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues()
+  var data    = rows.map(function(row, i) {
+    var obj = { client_id: CLIENT_ID, orden: i }
+    headers.forEach(function(h, idx) { obj[h] = row[idx] })
+    return obj
+  })
+
+  supabaseInsert('banners', data)
+}
+
+// ─── HTTP helpers ─────────────────────────────────────────────
+
+function supabaseUpsert(table, data, onConflict) {
+  UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Prefer': 'resolution=merge-duplicates',
+    },
+    payload: JSON.stringify(data),
+    muteHttpExceptions: true,
+  })
+}
+
+function supabaseDelete(table, clientId) {
+  UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + table + '?client_id=eq.' + clientId, {
+    method: 'delete',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+    },
+    muteHttpExceptions: true,
+  })
+}
+
+function supabaseInsert(table, data) {
+  UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + table, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+    },
+    payload: JSON.stringify(data),
+    muteHttpExceptions: true,
+  })
 }
 
 // =============================================================
