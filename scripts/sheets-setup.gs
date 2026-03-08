@@ -41,59 +41,40 @@ function onOpen() {
   refreshModeloDropdowns()
 }
 
+// onEdit simple: solo marca que hay cambios pendientes (no puede hacer más)
 function onEdit(e) {
   var sheet = e.range.getSheet()
   var sheetName = sheet.getName()
 
-  // Si editaron modelos, regenerar dropdowns de modelo_id en unidades
   if (sheetName === 'modelos') {
     refreshModeloDropdowns()
   }
 
   validateCell(e)
-  scheduleSyncDebounced()
+
+  // Marcar que hay cambios pendientes con timestamp
+  PropertiesService.getScriptProperties().setProperty('lastEditTime', Date.now().toString())
 }
 
 // =============================================================
-// DEBOUNCE SYNC
+// DEBOUNCE SYNC — corre cada 1 min via trigger instalable
+// Instalar UNA VEZ: Apps Script → Triggers → checkAndSync →
+//   Time-driven → Minute timer → Every minute
 // =============================================================
 
-function scheduleSyncDebounced() {
-  var props = PropertiesService.getScriptProperties()
+function checkAndSync() {
+  var props    = PropertiesService.getScriptProperties()
+  var lastEdit = parseInt(props.getProperty('lastEditTime') || '0')
 
-  // Guardar timestamp de última edición
-  props.setProperty('lastEditTime', Date.now().toString())
+  if (lastEdit === 0) return  // nunca se editó
 
-  // Eliminar triggers de sync anteriores
-  ScriptApp.getProjectTriggers().forEach(function(t) {
-    if (t.getHandlerFunction() === 'runDebouncedSync') {
-      ScriptApp.deleteTrigger(t)
-    }
-  })
+  var elapsed = Date.now() - lastEdit
 
-  // Crear nuevo trigger en DEBOUNCE_MIN minutos
-  ScriptApp.newTrigger('runDebouncedSync')
-    .timeBased()
-    .after(DEBOUNCE_MIN * 60 * 1000)
-    .create()
-}
-
-function runDebouncedSync() {
-  // Eliminar este trigger (se autodestruye)
-  ScriptApp.getProjectTriggers().forEach(function(t) {
-    if (t.getHandlerFunction() === 'runDebouncedSync') {
-      ScriptApp.deleteTrigger(t)
-    }
-  })
-
-  var props     = PropertiesService.getScriptProperties()
-  var lastEdit  = parseInt(props.getProperty('lastEditTime') || '0')
-  var elapsed   = Date.now() - lastEdit
-
-  // Si hubo ediciones en los últimos DEBOUNCE_MIN minutos, no sincronizar
-  if (elapsed < DEBOUNCE_MIN * 60 * 1000) return
-
-  syncToSupabase()
+  // Sincronizar si pasaron DEBOUNCE_MIN minutos desde la última edición
+  if (elapsed >= DEBOUNCE_MIN * 60 * 1000) {
+    props.deleteProperty('lastEditTime')  // limpiar flag
+    syncToSupabase()
+  }
 }
 
 // =============================================================
