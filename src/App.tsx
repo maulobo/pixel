@@ -1,31 +1,52 @@
-import { Routes, Route } from "react-router";
+import { Routes, Route, useLocation } from "react-router";
 import { useEffect } from "react";
 import { useCatalogStore } from "./store/catalogStore";
-import { fetchCatalog } from "./lib/supabase";
+import { fetchCatalog, fetchConfig, fetchCategorias } from "./lib/supabase";
 import Navbar from "./components/Navbar";
+import CartDrawer from "./components/CartDrawer";
 import Footer from "./components/Footer";
 import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
 import DetailPage from "./pages/DetailPage";
+import CartPage from "./pages/CartPage";
+import AdminUploadPage from "./pages/AdminUploadPage";
+import Loader from "./components/Loader";
 
 export default function App() {
-  const { setCatalog, setLoading, setError } = useCatalogStore();
+  const location = useLocation();
+  const setCatalog = useCatalogStore((s) => s.setCatalog);
+  const setConfig = useCatalogStore((s) => s.setConfig);
+  const setLoading = useCatalogStore((s) => s.setLoading);
+  const setError = useCatalogStore((s) => s.setError);
+  const loading = useCatalogStore((s) => s.loading);
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
     setLoading(true);
-    fetchCatalog()
-      .then(setCatalog)
+    Promise.all([fetchCatalog(), fetchConfig(), fetchCategorias()])
+      .then(([catalog, config, categorias]) => {
+        setCatalog(catalog);
+        setConfig({ ...config, categorias });
+        if (config.color_primario) {
+          document.documentElement.style.setProperty("--primary", config.color_primario);
+        }
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [setCatalog, setLoading, setError]);
+  }, [setCatalog, setConfig, setLoading, setError]);
+
+  if (loading) return <Loader />;
 
   return (
     <div className="min-h-screen text-[var(--text)]">
-      <Navbar />
+      {!isAdminRoute && <Navbar />}
+      <CartDrawer />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/catalogo" element={<CatalogPage />} />
-        <Route path="/catalogo/:unidadId" element={<DetailPage />} />
+        <Route path="/catalogo/:modeloId" element={<DetailPage />} />
+        <Route path="/carrito" element={<CartPage />} />
+        <Route path="/admin/upload" element={<AdminUploadPage />} />
       </Routes>
       <Footer />
     </div>
