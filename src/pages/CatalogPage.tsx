@@ -1,28 +1,62 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { useCatalogStore } from "../store/catalogStore";
+import { getCommercialState } from "../lib/condition";
 import Filters from "../components/Filters";
 import DeviceCard from "../components/DeviceCard";
+import type { ModeloGroup } from "../types";
 
 const PAGE_SIZE = 12;
 
 export default function CatalogPage() {
   const [searchParams] = useSearchParams();
-  const { filteredCatalog, setFilter, loading } = useCatalogStore();
+  const catalog = useCatalogStore((s) => s.catalog);
+  const filters = useCatalogStore((s) => s.filters);
+  const loading = useCatalogStore((s) => s.loading);
+  const setFilter = useCatalogStore((s) => s.setFilter);
   const [page, setPage] = useState(1);
 
-  // Apply ?tipo= and ?condicion= from URL
   useEffect(() => {
-    const tipo = searchParams.get("tipo") ?? "";
+    const categoria = searchParams.get("categoria") ?? "";
     const condicion = searchParams.get("condicion") ?? "";
-    setFilter("tipo", tipo);
+    setFilter("categoria", categoria);
     setFilter("condicion", condicion);
     setPage(1);
   }, [searchParams, setFilter]);
 
-  const results = filteredCatalog();
-  const totalPages = Math.ceil(results.length / PAGE_SIZE);
-  const paginated = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const grouped = useMemo(() => {
+    const filtered = catalog.filter((u) => {
+      if (filters.categoria && u.modelo.categoria !== filters.categoria) return false;
+      if (filters.modelo && u.modelo_id !== filters.modelo) return false;
+      if (filters.color && u.color !== filters.color) return false;
+      if (u.precio < filters.precioMin || u.precio > filters.precioMax) return false;
+      if (filters.bateriaMin > 0 && u.bateria < filters.bateriaMin) return false;
+      if (filters.condicion) {
+        const state = getCommercialState(u.condicion, u.bateria);
+        if (filters.condicion === "__nuevo__" && state !== "nuevo") return false;
+        if (filters.condicion === "__usado__" && state !== "usado") return false;
+        if (
+          filters.condicion !== "__nuevo__" &&
+          filters.condicion !== "__usado__" &&
+          u.condicion !== filters.condicion
+        )
+          return false;
+      }
+      return true;
+    });
+
+    const map = new Map<string, ModeloGroup>();
+    for (const u of filtered) {
+      if (!map.has(u.modelo_id)) {
+        map.set(u.modelo_id, { modelo: u.modelo, unidades: [] });
+      }
+      map.get(u.modelo_id)!.unidades.push(u);
+    }
+    return Array.from(map.values());
+  }, [catalog, filters]);
+
+  const totalPages = Math.ceil(grouped.length / PAGE_SIZE);
+  const paginated = grouped.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function goTo(p: number) {
     setPage(p);
@@ -31,32 +65,58 @@ export default function CatalogPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-10 md:py-14 animate-rise">
-      <h1 className="brand-heading text-4xl md:text-5xl font-bold text-[var(--text)] mb-8">
-        Catalogo
-      </h1>
+      <section className="surface-panel rounded-[2rem] border border-white/80 px-6 py-7 md:px-8 md:py-8 mb-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--primary)] mb-2">
+              Catalogo activo
+            </p>
+            <h1 className="brand-heading text-4xl md:text-5xl font-bold text-[var(--text)]">
+              Tecnologia lista para cotizar
+            </h1>
+            <p className="text-[var(--muted)] mt-3 max-w-2xl">
+              Filtra por categoria, estado o precio para responder consultas mas rapido y mostrar opciones concretas.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3 text-sm">
+            <span className="pill-muted text-[var(--text)]">
+              {grouped.length} modelos
+            </span>
+            <span className="pill-muted text-[var(--text)]">
+              Stock actualizado
+            </span>
+          </div>
+        </div>
+      </section>
 
       <div className="flex flex-col lg:flex-row gap-8">
         <Filters />
 
         <div className="flex-1">
           {loading ? (
-            <div className="text-center py-20 text-[var(--muted)]">
+            <div className="surface-card rounded-[1.75rem] text-center py-20 text-[var(--muted)]">
               Cargando...
             </div>
-          ) : results.length === 0 ? (
-            <div className="text-center py-20 text-[var(--muted)]">
+          ) : grouped.length === 0 ? (
+            <div className="surface-card rounded-[1.75rem] text-center py-20 text-[var(--muted)]">
               No hay dispositivos con esos filtros.
             </div>
           ) : (
             <>
-              <p className="text-sm text-[var(--muted)] mb-5 font-medium">
-                {results.length} productos
-                {totalPages > 1 && ` · página ${page} de ${totalPages}`}
-              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-5">
+                <p className="text-sm text-[var(--muted)] font-medium">
+                  {grouped.length} modelos
+                  {totalPages > 1 && ` · pagina ${page} de ${totalPages}`}
+                </p>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)] font-bold">
+                  Seleccion visible para venta inmediata
+                </p>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                {paginated.map((u) => (
-                  <DeviceCard key={u.unidad_id} unidad={u} />
+                {paginated.map((group) => (
+                  <DeviceCard key={group.modelo.modelo_id} group={group} />
                 ))}
               </div>
 
@@ -72,15 +132,26 @@ export default function CatalogPage() {
 
                   <div className="flex gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                      .filter(
+                        (p) =>
+                          p === 1 ||
+                          p === totalPages ||
+                          Math.abs(p - page) <= 1,
+                      )
                       .reduce<(number | "…")[]>((acc, p, idx, arr) => {
-                        if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("…");
+                        if (idx > 0 && p - (arr[idx - 1] as number) > 1)
+                          acc.push("…");
                         acc.push(p);
                         return acc;
                       }, [])
                       .map((p, idx) =>
                         p === "…" ? (
-                          <span key={`ellipsis-${idx}`} className="px-2 py-2 text-sm text-[var(--muted)]">…</span>
+                          <span
+                            key={`ellipsis-${idx}`}
+                            className="px-2 py-2 text-sm text-[var(--muted)]"
+                          >
+                            …
+                          </span>
                         ) : (
                           <button
                             key={p}
@@ -93,7 +164,7 @@ export default function CatalogPage() {
                           >
                             {p}
                           </button>
-                        )
+                        ),
                       )}
                   </div>
 
