@@ -10,7 +10,7 @@ export default function DeviceCard({ group }: Props) {
 
   const uniqueColors = [...new Set(unidades.map((u) => u.color).filter(Boolean))];
   const uniqueCapacidades = [...new Set(unidades.map((u) => u.capacidad).filter(Boolean))];
-  const minPrecio = Math.min(...unidades.map((u) => u.precio));
+  const minPrecio = unidades.reduce((min, u) => Math.min(min, u.precio), Infinity);
   const hasVariants = uniqueColors.length > 1 || uniqueCapacidades.length > 1;
 
   return (
