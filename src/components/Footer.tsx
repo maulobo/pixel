@@ -12,6 +12,7 @@ export default function Footer() {
               <li><Link to="/catalogo?tipo=Mac" className="hover:text-white transition-colors">Mac</Link></li>
               <li><Link to="/catalogo?tipo=iPad" className="hover:text-white transition-colors">iPad</Link></li>
               <li><Link to="/catalogo" className="hover:text-white transition-colors">Ver todo</Link></li>
+              <li><Link to="/carrito" className="hover:text-white transition-colors">Carrito</Link></li>
             </ul>
           </div>
 

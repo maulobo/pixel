@@ -155,7 +155,7 @@ export default function DetailPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
         <section className="space-y-6">
-          <div className="surface-panel rounded-[2.2rem] border border-white/80 p-6 md:p-8">
+          <div className="rounded-[2.2rem] border border-[var(--line)] bg-white/72 p-6 md:p-8 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.18)]">
             <div className="flex flex-wrap items-center gap-2 mb-5">
               <span className="inline-flex rounded-full bg-[var(--primary)]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--primary)]">
                 {selectedUnidad.modelo.categoria}
@@ -190,7 +190,7 @@ export default function DetailPage() {
             </div>
           </div>
 
-          <div className="surface-panel rounded-[1.9rem] border border-white/80 p-6 md:p-7">
+          <div className="px-1 md:px-2">
             <div className="flex flex-wrap gap-3 mb-5">
               {selectedUnidad.color && (
                 <span className="pill-muted text-[var(--text)]">{selectedUnidad.color}</span>
@@ -208,7 +208,7 @@ export default function DetailPage() {
               {selectedUnidad.modelo.descripcion_general}
             </p>
 
-            <div className="rounded-[1.4rem] bg-white/72 border border-white px-5 py-4">
+            <div className="border-t border-[var(--line)] pt-5">
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)] font-semibold mb-2">
                 Especificaciones destacadas
               </p>
@@ -219,12 +219,12 @@ export default function DetailPage() {
           </div>
         </section>
 
-        <aside className="lg:sticky lg:top-24 space-y-6">
-          <div className="surface-panel rounded-[2rem] border border-white/80 p-6 md:p-7">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--primary)] mb-2">
+        <aside className="lg:sticky lg:top-24">
+          <div className="pb-6 border-b border-[var(--line)]">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--primary)] mb-3">
               Seleccion comercial
             </p>
-            <h1 className="brand-heading text-4xl md:text-[2.8rem] font-bold text-[var(--text)] leading-[1.02]">
+            <h1 className="brand-heading text-4xl md:text-[3rem] font-bold text-[var(--text)] leading-[0.98]">
               {selectedUnidad.modelo.nombre}
             </h1>
             <p className="text-lg text-[var(--muted)] mt-3">
@@ -232,7 +232,7 @@ export default function DetailPage() {
             </p>
 
             {(uniqueColors.length > 1 || uniqueCapacidades.length > 1) && (
-              <div className="mt-5 space-y-4 pb-5 border-b border-[var(--line)]">
+              <div className="mt-6 space-y-5">
                 <VariantPills
                   label="Color"
                   options={uniqueColors}
@@ -248,45 +248,22 @@ export default function DetailPage() {
               </div>
             )}
 
-            <div className="mt-6 flex items-end justify-between gap-4">
+            <div className="mt-8 flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)] font-semibold mb-1">
                   Precio publicado
                 </p>
-                <p className="text-4xl font-extrabold text-[var(--text)]">
+                <p className="text-5xl font-extrabold text-[var(--text)] tracking-[-0.04em]">
                   ${selectedUnidad.precio.toLocaleString("es-AR")}
                 </p>
               </div>
-              <div className="rounded-[1.2rem] bg-[#25d366]/12 text-[#128c7e] px-4 py-3 text-sm font-semibold">
-                Consulta directa
+              <div className="text-[#128c7e] px-1 py-1 text-sm font-semibold uppercase tracking-[0.16em]">
+                WhatsApp directo
               </div>
-            </div>
-
-            <div className="grid gap-3 mt-6">
-              <a
-                href={buildUnitWhatsAppUrl(selectedUnidad, whatsapp)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-[#25d366] text-white text-center font-semibold py-4 rounded-[1.4rem] hover:bg-[#1fb85a] transition-colors flex items-center justify-center gap-2 text-lg shadow-[0_22px_40px_-22px_rgba(37,211,102,0.8)]"
-              >
-                <WhatsAppIcon />
-                Consultar por WhatsApp
-              </a>
-
-              <button
-                onClick={handleCartAction}
-                className={`w-full text-center font-semibold py-4 rounded-[1.4rem] transition-colors text-lg ${
-                  inCart
-                    ? "bg-[#0f172a] text-white hover:bg-[#111c33]"
-                    : "border border-[var(--line)] bg-white/85 text-[var(--text)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
-                }`}
-              >
-                {inCart ? "Quitar del carrito" : "Agregar al carrito"}
-              </button>
             </div>
           </div>
 
-          <div className="surface-panel rounded-[2rem] border border-white/80 p-6 md:p-7 space-y-5">
+          <div className="pt-6 space-y-6">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-[0.16em]">
                 Estado de esta unidad
@@ -296,29 +273,33 @@ export default function DetailPage() {
               </span>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <div className="rounded-[1.3rem] bg-white/76 border border-white px-4 py-4">
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)] font-semibold mb-2">
-                  Condicion
-                </p>
-                <p className="text-base font-semibold text-[var(--text)]">
+            <div className="grid gap-1 border-t border-[var(--line)] pt-4">
+              <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
+                <p className="text-sm text-[var(--muted)]">Condicion</p>
+                <p className="text-sm font-semibold text-[var(--text)] text-right">
                   {selectedUnidad.condicion}
                 </p>
               </div>
-              <div className="rounded-[1.3rem] bg-white/76 border border-white px-4 py-4">
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)] font-semibold mb-2">
-                  Capacidad
-                </p>
-                <p className="text-base font-semibold text-[var(--text)]">
+              <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
+                <p className="text-sm text-[var(--muted)]">Capacidad</p>
+                <p className="text-sm font-semibold text-[var(--text)] text-right">
                   {selectedUnidad.capacidad || "No especificada"}
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
+                <p className="text-sm text-[var(--muted)]">Referencia</p>
+                <p className="text-sm font-semibold text-[var(--text)] text-right">
+                  {selectedUnidad.unidad_id}
                 </p>
               </div>
             </div>
 
-            <BatteryBar value={selectedUnidad.bateria} />
+            <div className="pt-1">
+              <BatteryBar value={selectedUnidad.bateria} />
+            </div>
 
             {selectedUnidad.descripcion_particular && (
-              <div className="rounded-[1.3rem] bg-white/72 border border-white px-4 py-4">
+              <div className="border-t border-[var(--line)] pt-6">
                 <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)] font-semibold mb-2">
                   Notas de la unidad
                 </p>
@@ -328,13 +309,36 @@ export default function DetailPage() {
               </div>
             )}
 
-            <div className="rounded-[1.3rem] bg-[#f6fbff] border border-[#dcecff] px-4 py-4">
+            <div className="border-t border-[var(--line)] pt-6">
               <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)] font-semibold mb-2">
                 Sugerencia
               </p>
               <p className="text-sm text-[var(--text)] leading-relaxed">
                 Si el cliente esta comparando varios equipos, agrega este producto al carrito y envia una sola consulta completa por WhatsApp.
               </p>
+            </div>
+
+            <div className="grid gap-3 pt-6 border-t border-[var(--line)]">
+              <a
+                href={buildUnitWhatsAppUrl(selectedUnidad, whatsapp)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#25d366] text-white text-center font-semibold py-4 rounded-[1.2rem] hover:bg-[#1fb85a] transition-colors flex items-center justify-center gap-2 text-lg shadow-[0_22px_40px_-22px_rgba(37,211,102,0.8)]"
+              >
+                <WhatsAppIcon />
+                Consultar por WhatsApp
+              </a>
+
+              <button
+                onClick={handleCartAction}
+                className={`w-full text-center font-semibold py-4 rounded-[1.2rem] transition-colors text-lg ${
+                  inCart
+                    ? "bg-[#0f172a] text-white hover:bg-[#111c33]"
+                    : "border border-[var(--line)] bg-white/85 text-[var(--text)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                }`}
+              >
+                {inCart ? "Quitar del carrito" : "Agregar al carrito"}
+              </button>
             </div>
           </div>
         </aside>

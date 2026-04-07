@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #0a84ff;
+        --bg: #f8fafc;
+        --text: #0f172a;
+      }
+      body {
+        font-family: "Manrope", sans-serif;
+        padding: 20px;
+        background-color: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      h2 {
+        font-size: 18px;
+        margin-bottom: 24px;
+        font-weight: 700;
+      }
+      .upload-box {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 30px 20px;
+        background: white;
+        width: 100%;
+        box-sizing: border-box;
+        transition: all 0.2s;
+        cursor: pointer;
+        position: relative;
+      }
+      .upload-box:hover {
+        border-color: var(--primary);
+        background: #f0f9ff;
+      }
+      .upload-box input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+      .icon {
+        font-size: 32px;
+        margin-bottom: 10px;
+        display: block;
+      }
+      .btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 20px;
+        transition: opacity 0.2s;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #status {
+        margin-top: 15px;
+        font-size: 13px;
+        min-height: 20px;
+        color: #64748b;
+      }
+      .preview {
+        margin-top: 20px;
+        max-width: 100%;
+        border-radius: 8px;
+        display: none;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <h2>📸 Subir Imagen</h2>
+
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 20px">
+      Seleccioná una celda y subí la foto. El link aparecerá automáticamente.
+    </p>
+
+    <div class="upload-box">
+      <span class="icon">☁️</span>
+      <span id="file-label">Toca para elegir foto</span>
+      <input type="file" id="file" accept="image/*" onchange="previewImage()" />
+    </div>
+
+    <img id="preview-img" class="preview" src="" />
+
+    <button id="upload-btn" class="btn" onclick="upload()" disabled>
+      Subir a Supabase
+    </button>
+    <div id="status"></div>
+
+    <script>
+      let fileData = null;
+
+      function previewImage() {
+        const fileInput = document.getElementById("file");
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        document.getElementById("file-label").textContent = file.name;
+        document.getElementById("upload-btn").disabled = false;
+
+        // Preview
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = document.getElementById("preview-img");
+          img.src = e.target.result;
+          img.style.display = "block";
+          // Guardar base64 sin el header 'data:image/...'
+          fileData = {
+            name: file.name,
+            type: file.type,
+            base64: e.target.result.split(",")[1],
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function upload() {
+        if (!fileData) return;
+
+        const btn = document.getElementById("upload-btn");
+        const status = document.getElementById("status");
+
+        btn.disabled = true;
+        btn.textContent = "Subiendo...";
+        status.textContent = "Procesando imagen...";
+
+        google.script.run
+          .withSuccessHandler(function (url) {
+            btn.textContent = "¡Listo!";
+            status.textContent = "✅ Link pegado en la celda";
+            status.style.color = "#10b981";
+            setTimeout(() => {
+              btn.disabled = false;
+              btn.textContent = "Subir otra";
+            }, 2000);
+          })
+          .withFailureHandler(function (err) {
+            btn.textContent = "Reintentar";
+            btn.disabled = false;
+            status.textContent = "❌ Error: " + err.message;
+            status.style.color = "#ef4444";
+          })
+          .uploadToSupabase(fileData);
+      }
+    </script>
+  </body>
+</html>

@@ -1,384 +1,353 @@
 // =============================================================
 // PIXEL — Google Sheets Setup Script
-// Pegar en Extensiones > Apps Script y guardar.
-// Corre automático en cada edición y al abrir el Sheet.
+// Credenciales en: Configuración del proyecto > Propiedades de script
+//   SUPABASE_URL, SUPABASE_SERVICE_KEY, CLIENT_ID
+// Triggers necesarios (instalable, NO simple):
+//   1. onEditDebounced → Desde hoja de cálculo → Al editar
 // =============================================================
 
-// ─── COLORES ─────────────────────────────────────────────────
-var COLOR = {
-  headerBg:    '#1e3a5f',   // azul marino
-  headerFg:    '#ffffff',   // blanco
-  rowAlt:      '#f0f4f8',   // gris azulado muy claro
-  rowNormal:   '#ffffff',
-  errorBg:     '#fce8e6',   // rojo claro
-  errorBorder: '#d93025',   // rojo
-  border:      '#c5d0de',
-}
+var props = PropertiesService.getScriptProperties();
+var SUPABASE_URL = props.getProperty("SUPABASE_URL");
+var SUPABASE_KEY = props.getProperty("SUPABASE_SERVICE_KEY");
+var CLIENT_ID = props.getProperty("CLIENT_ID");
 
-// ─── COLUMNAS POR HOJA ───────────────────────────────────────
-var HEADERS = {
-  modelos:  ['modelo_id','tipo','nombre','descripcion_general','specs','imagen_principal'],
-  unidades: ['unidad_id','modelo_id','color','capacidad','bateria','condicion','precio','descripcion_particular','disponible','imagen_url'],
-  banners:  ['name','description','subdescription','photo'],
-}
-
-var TIPOS_VALIDOS     = ['iPhone','Mac','iPad','Accesorio']
-var CONDICION_VALIDA  = ['Nuevo','Excelente','Muy bueno','Bueno']
-
-// ─── SUPABASE CONFIG ─────────────────────────────────────────
-// Completar con tus valores (anon key — es pública, no hay drama)
-var SUPABASE_URL  = 'https://vytnhbxioqwzgtqlgbkh.supabase.co'
-var SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dG5oYnhpb3F3emd0cWxnYmtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDk0MzksImV4cCI6MjA4ODM4NTQzOX0.Cb_Vq_ZwsTxoH2TLc-rEqsBU_ztnNidoOgEaXvhoCI8'
-var CLIENT_ID     = 'cb991593-cb0e-4a25-860b-6962b7c1a27e'
-var DEBOUNCE_MIN  = 2  // minutos de inactividad antes de sincronizar
+var SYNCABLE = ["modelos", "unidades", "config", "categorias"];
 
 // =============================================================
-// TRIGGERS PRINCIPALES
+// SIDEBAR (Subida de Imágenes)
 // =============================================================
 
 function onOpen() {
-  formatAllSheets()
-  refreshModeloDropdowns()
+  SpreadsheetApp.getUi()
+    .createMenu("Pixel")
+    .addItem("📸 Subir Imagen a Supabase", "showSidebar")
+    .addToUi();
 }
 
-// onEdit simple: solo marca que hay cambios pendientes (no puede hacer más)
-function onEdit(e) {
-  var sheet = e.range.getSheet()
-  var sheetName = sheet.getName()
-
-  if (sheetName === 'modelos') {
-    refreshModeloDropdowns()
-  }
-
-  validateCell(e)
-
-  // Marcar que hay cambios pendientes con timestamp
-  PropertiesService.getScriptProperties().setProperty('lastEditTime', Date.now().toString())
+function showSidebar() {
+  var html = HtmlService.createHtmlOutputFromFile("sidebar")
+    .setTitle("Pixel Media Uploader")
+    .setWidth(300);
+  SpreadsheetApp.getUi().showSidebar(html);
 }
 
-// =============================================================
-// DEBOUNCE SYNC — corre cada 1 min via trigger instalable
-// Instalar UNA VEZ: Apps Script → Triggers → checkAndSync →
-//   Time-driven → Minute timer → Every minute
-// =============================================================
+function uploadToSupabase(fileInfo) {
+  var activeCell = SpreadsheetApp.getActiveRange();
+  if (!activeCell) throw new Error("Seleccioná una celda primero.");
 
-function checkAndSync() {
-  var props    = PropertiesService.getScriptProperties()
-  var lastEdit = parseInt(props.getProperty('lastEditTime') || '0')
+  var fileName =
+    new Date().getTime() + "_" + fileInfo.name.replace(/\s+/g, "_");
+  var bucketName = "pixel-gallery"; // ⚠️ AVISO: El usuario debe crear este bucket PUBLICO en Supabase
 
-  if (lastEdit === 0) return  // nunca se editó
+  var uploadUrl =
+    SUPABASE_URL + "/storage/v1/object/" + bucketName + "/" + fileName;
 
-  var elapsed = Date.now() - lastEdit
+  // 1. Subir archivo binario
+  var blob = Utilities.newBlob(
+    Utilities.base64Decode(fileInfo.base64),
+    fileInfo.type,
+    fileName,
+  );
 
-  // Sincronizar si pasaron DEBOUNCE_MIN minutos desde la última edición
-  if (elapsed >= DEBOUNCE_MIN * 60 * 1000) {
-    props.deleteProperty('lastEditTime')  // limpiar flag
-    syncToSupabase()
-  }
-}
-
-// =============================================================
-// SYNC A SUPABASE
-// =============================================================
-
-function syncToSupabase() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  syncSheet(ss, 'modelos',  'modelos',  'modelo_id')
-  syncSheet(ss, 'unidades', 'unidades', 'unidad_id')
-  syncBanners(ss)
-}
-
-function syncSheet(ss, sheetName, table, idCol) {
-  var sheet   = ss.getSheetByName(sheetName)
-  if (!sheet || sheet.getLastRow() < 2) return
-
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
-  var rows    = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues()
-
-  // Construir array de objetos + deduplicar por idCol
-  var idIdx = headers.indexOf(idCol)
-  var seen  = {}
-  var data  = []
-  rows.forEach(function(row) {
-    var id = String(row[idIdx]).trim()
-    if (!id || seen[id]) return
-    seen[id] = true
-    var obj = { client_id: CLIENT_ID }
-    headers.forEach(function(h, i) { obj[h] = row[i] })
-    data.push(obj)
-  })
-
-  if (data.length === 0) return
-
-  supabaseUpsert(table, data, idCol + ',client_id')
-}
-
-function syncBanners(ss) {
-  var sheet = ss.getSheetByName('banners')
-  if (!sheet || sheet.getLastRow() < 2) return
-
-  // Borrar banners del cliente y reinsertar
-  supabaseDelete('banners', CLIENT_ID)
-
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
-  var rows    = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues()
-  var data    = rows.map(function(row, i) {
-    var obj = { client_id: CLIENT_ID, orden: i }
-    headers.forEach(function(h, idx) { obj[h] = row[idx] })
-    return obj
-  })
-
-  supabaseInsert('banners', data)
-}
-
-// ─── HTTP helpers ─────────────────────────────────────────────
-
-function supabaseUpsert(table, data, onConflict) {
-  UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
-    method: 'post',
-    contentType: 'application/json',
+  var options = {
+    method: "post",
     headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Prefer': 'resolution=merge-duplicates',
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + SUPABASE_KEY,
+      "Content-Type": fileInfo.type,
+    },
+    payload: blob.getBytes(),
+    muteHttpExceptions: true,
+  };
+
+  var response = UrlFetchApp.fetch(uploadUrl, options);
+
+  if (response.getResponseCode() >= 400) {
+    throw new Error("Supabase Error: " + response.getContentText());
+  }
+
+  // 2. Construir URL pública
+  var publicUrl =
+    SUPABASE_URL + "/storage/v1/object/public/" + bucketName + "/" + fileName;
+
+  // 3. Pegar en la celda
+  activeCell.setValue(publicUrl);
+
+  return publicUrl;
+}
+
+// =============================================================
+// TRIGGERS
+// =============================================================
+
+// Trigger instalable "Al editar" → apuntar a esta función
+function onEditDebounced(e) {
+  var sheetName =
+    e && e.source ? e.source.getActiveSheet().getName().toLowerCase() : null;
+  if (!sheetName || SYNCABLE.indexOf(sheetName) === -1) return;
+
+  // Borrar triggers previos temporales (para reiniciar el minuto de espera)
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === "runSync") {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  // Marcar qué pestaña cambió
+  props.setProperty("pending_" + sheetName, "true");
+
+  // Crear un timer temporal para dentro de 1 minuto (debounce)
+  ScriptApp.newTrigger("runSync")
+    .timeBased()
+    .after(60 * 1000)
+    .create();
+}
+
+// Ejecutada por el timer al pasar un minuto sin cambios
+function runSync() {
+  // Leer y limpiar todos los pending de una vez
+  var pending = {};
+  SYNCABLE.forEach(function (name) {
+    if (props.getProperty("pending_" + name) === "true") {
+      props.deleteProperty("pending_" + name);
+      pending[name] = true;
+    }
+  });
+
+  // Si cambiaron modelos o unidades, sincronizar ambas juntas (por la FK)
+  if (pending["modelos"] || pending["unidades"]) {
+    syncModelosYUnidades();
+  }
+
+  if (pending["config"]) syncConfig();
+  if (pending["categorias"]) syncCategorias();
+}
+
+// =============================================================
+// SYNC
+// =============================================================
+
+function syncAll() {
+  syncModelosYUnidades();
+  syncConfig();
+  syncCategorias();
+}
+
+function syncModelosYUnidades() {
+  Logger.log("→ leyendo modelos...");
+  var modelosData = buildTableData("modelos", "modelo_id");
+  Logger.log("→ leyendo unidades...");
+  var unidadesData = buildTableData("unidades", "unidad_id");
+  Logger.log("Headers unidades: " + JSON.stringify(
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName("unidades")
+      .getRange(1, 1, 1, SpreadsheetApp.getActiveSpreadsheet().getSheetByName("unidades").getLastColumn())
+      .getValues()[0]
+  ));
+
+  // Filtrar unidades que referencian modelos inexistentes
+  var modeloIds = {};
+  modelosData.forEach(function (m) {
+    modeloIds[m.modelo_id] = true;
+  });
+  var huerfanas = [];
+  var unidadesValidas = unidadesData.filter(function (u) {
+    if (!modeloIds[u.modelo_id]) {
+      huerfanas.push(u.unidad_id + " → modelo '" + u.modelo_id + "' no existe");
+      return false;
+    }
+    return true;
+  });
+
+  // Si hay huérfanas, avisar y abortar — no tocar Supabase
+  if (huerfanas.length > 0) {
+    try {
+      SpreadsheetApp.getUi().alert(
+        "⚠️ Sync cancelado\n\n" +
+          "Las siguientes unidades referencian modelos inexistentes:\n\n" +
+          huerfanas.join("\n") +
+          "\n\nCorregí el modelo_id antes de sincronizar.",
+      );
+    } catch (e) {
+      Logger.log(
+        "SYNC CANCELADO — unidades huérfanas:\n" + huerfanas.join("\n"),
+      );
+    }
+    return;
+  }
+
+  Logger.log("→ borrando unidades...");
+  deleteTable("unidades");
+  Logger.log("→ borrando modelos...");
+  deleteTable("modelos");
+  Logger.log("→ insertando modelos (" + modelosData.length + " filas)...");
+  insertTable("modelos", modelosData);
+  Logger.log("→ insertando unidades (" + unidadesValidas.length + " filas)...");
+  insertTable("unidades", unidadesValidas);
+  Logger.log("✓ modelos y unidades sincronizados");
+
+}
+
+function buildTableData(sheetName, idCol) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+
+  var headers = sheet
+    .getRange(1, 1, 1, sheet.getLastColumn())
+    .getValues()[0]
+    .map(function (h) {
+      return String(h).trim().toLowerCase();
+    });
+  var rows = sheet
+    .getRange(2, 1, sheet.getLastRow() - 1, headers.length)
+    .getValues();
+
+  var seen = {};
+  var data = [];
+  var idIdx = headers.indexOf(idCol);
+
+  // Índice de modelo_id para validar filas de unidades
+  var modeloIdIdx = headers.indexOf("modelo_id");
+
+  for (var i = 0; i < rows.length; i++) {
+    var id = String(rows[i][idIdx]).trim();
+    if (!id || seen[id]) continue;
+
+    // Saltear filas incompletas donde modelo_id es obligatorio pero está vacío
+    if (modeloIdIdx !== -1 && String(rows[i][modeloIdIdx]).trim() === "")
+      continue;
+
+    seen[id] = true;
+    var obj = { client_id: CLIENT_ID };
+    headers.forEach(function (h, idx) {
+      if (!h) return; // ignorar columnas sin header
+      var val = rows[i][idx];
+      obj[h] = val === "" || val === undefined ? null : val;
+    });
+    data.push(obj);
+  }
+  return data;
+}
+
+function deleteTable(sheetName) {
+  var resp = UrlFetchApp.fetch(
+    SUPABASE_URL + "/rest/v1/" + sheetName + "?client_id=eq." + CLIENT_ID,
+    {
+      method: "delete",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY,
+      },
+      muteHttpExceptions: true,
+    },
+  );
+  if (resp.getResponseCode() >= 400) {
+    Logger.log("ERROR delete " + sheetName + ": " + resp.getContentText());
+    throw new Error("delete " + sheetName + " failed");
+  }
+}
+
+function insertTable(sheetName, data) {
+  if (!data || data.length === 0) return;
+  var resp = UrlFetchApp.fetch(SUPABASE_URL + "/rest/v1/" + sheetName, {
+    method: "post",
+    contentType: "application/json",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + SUPABASE_KEY,
     },
     payload: JSON.stringify(data),
     muteHttpExceptions: true,
-  })
+  });
+  if (resp.getResponseCode() >= 400) {
+    Logger.log("ERROR insert " + sheetName + ": " + resp.getContentText());
+  }
 }
 
-function supabaseDelete(table, clientId) {
-  UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + table + '?client_id=eq.' + clientId, {
-    method: 'delete',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-    },
-    muteHttpExceptions: true,
-  })
+function syncTable(sheetName, idCol) {
+  var data = buildTableData(sheetName, idCol);
+  deleteTable(sheetName);
+  insertTable(sheetName, data);
 }
 
-function supabaseInsert(table, data) {
-  UrlFetchApp.fetch(SUPABASE_URL + '/rest/v1/' + table, {
-    method: 'post',
-    contentType: 'application/json',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
+function syncConfig() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("config");
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  var data = rows
+    .filter(function (row) {
+      var key = String(row[0]).trim();
+      return key !== "" && key[0] !== "#";
+    })
+    .map(function (row) {
+      return {
+        client_id: CLIENT_ID,
+        key: String(row[0]).trim(),
+        value: String(row[1]),
+      };
+    });
+
+  if (data.length === 0) return;
+
+  UrlFetchApp.fetch(
+    SUPABASE_URL + "/rest/v1/config?on_conflict=key,client_id",
+    {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY,
+        Prefer: "resolution=merge-duplicates",
+      },
+      payload: JSON.stringify(data),
+      muteHttpExceptions: true,
     },
+  );
+}
+
+function syncCategorias() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("categorias");
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  var data = [];
+  rows.forEach(function (r, i) {
+    var nombre = String(r[0]).trim();
+    if (!nombre) return;
+    var web = String(r[1]).trim().toUpperCase() !== "FALSE";
+    data.push({ client_id: CLIENT_ID, nombre: nombre, orden: i, web: web });
+  });
+
+  if (data.length === 0) return;
+
+  // Delete + insert para reflejar el orden y eliminaciones
+  var delResp = UrlFetchApp.fetch(
+    SUPABASE_URL + "/rest/v1/categorias?client_id=eq." + CLIENT_ID,
+    {
+      method: "delete",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY,
+      },
+      muteHttpExceptions: true,
+    },
+  );
+  if (delResp.getResponseCode() >= 400) {
+    Logger.log("ERROR delete categorias: " + delResp.getContentText());
+    return;
+  }
+
+  var insResp = UrlFetchApp.fetch(SUPABASE_URL + "/rest/v1/categorias", {
+    method: "post",
+    contentType: "application/json",
+    headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY },
     payload: JSON.stringify(data),
     muteHttpExceptions: true,
-  })
-}
-
-// =============================================================
-// FORMATO VISUAL
-// =============================================================
-
-function formatAllSheets() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  Object.keys(HEADERS).forEach(function(name) {
-    var sheet = ss.getSheetByName(name)
-    if (!sheet) return
-    formatSheet(sheet, HEADERS[name])
-  })
-}
-
-function formatSheet(sheet, headers) {
-  var lastRow  = Math.max(sheet.getLastRow(), 2)
-  var numCols  = headers.length
-
-  // ── Header row ──────────────────────────────────────────
-  var headerRange = sheet.getRange(1, 1, 1, numCols)
-  headerRange
-    .setValues([headers])
-    .setBackground(COLOR.headerBg)
-    .setFontColor(COLOR.headerFg)
-    .setFontWeight('bold')
-    .setFontSize(11)
-    .setHorizontalAlignment('center')
-    .setVerticalAlignment('middle')
-  sheet.setRowHeight(1, 36)
-  sheet.setFrozenRows(1)
-
-  // ── Filas de datos alternadas ────────────────────────────
-  if (lastRow > 1) {
-    for (var r = 2; r <= lastRow; r++) {
-      var bg = (r % 2 === 0) ? COLOR.rowNormal : COLOR.rowAlt
-      sheet.getRange(r, 1, 1, numCols).setBackground(bg)
-    }
+  });
+  if (insResp.getResponseCode() >= 400) {
+    Logger.log("ERROR insert categorias: " + insResp.getContentText());
   }
-
-  // ── Bordes ───────────────────────────────────────────────
-  var allRange = sheet.getRange(1, 1, lastRow, numCols)
-  allRange.setBorder(
-    true, true, true, true, true, true,
-    COLOR.border,
-    SpreadsheetApp.BorderStyle.SOLID
-  )
-
-  // ── Ancho de columnas ────────────────────────────────────
-  for (var c = 1; c <= numCols; c++) {
-    sheet.setColumnWidth(c, 160)
-  }
-  // Primera columna (ID) más angosta
-  sheet.setColumnWidth(1, 120)
-}
-
-// =============================================================
-// DROPDOWN DINÁMICO: modelo_id en unidades
-// =============================================================
-
-function refreshModeloDropdowns() {
-  var ss        = SpreadsheetApp.getActiveSpreadsheet()
-  var modSheet  = ss.getSheetByName('modelos')
-  var unSheet   = ss.getSheetByName('unidades')
-  if (!modSheet || !unSheet) return
-
-  var lastRow = modSheet.getLastRow()
-  if (lastRow < 2) return
-
-  // Leer todos los modelo_id (columna 1, desde fila 2)
-  var ids = modSheet.getRange(2, 1, lastRow - 1, 1).getValues()
-  var modeloIds = ids
-    .map(function(row) { return String(row[0]).trim() })
-    .filter(function(id) { return id !== '' })
-
-  if (modeloIds.length === 0) return
-
-  // Aplicar dropdown a toda la columna modelo_id en unidades (col 2)
-  var unLastRow = Math.max(unSheet.getLastRow(), 2)
-  var dropRange = unSheet.getRange(2, 2, unLastRow - 1, 1)
-  var rule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(modeloIds, true)
-    .setAllowInvalid(false)
-    .setHelpText('Debe ser un modelo_id existente en la hoja "modelos"')
-    .build()
-  dropRange.setDataValidation(rule)
-}
-
-// =============================================================
-// VALIDACIONES
-// =============================================================
-
-function validateCell(e) {
-  var range     = e.range
-  var sheet     = range.getSheet()
-  var sheetName = sheet.getName()
-  var col       = range.getColumn()
-  var row       = range.getRow()
-  var value     = range.getValue()
-
-  // Ignorar header
-  if (row === 1) return
-
-  var headers = HEADERS[sheetName]
-  if (!headers) return
-
-  var colName = headers[col - 1]
-  if (!colName) return
-
-  var error = getValidationError(sheetName, colName, col, row, value, sheet)
-
-  if (error) {
-    markError(range, error)
-  } else {
-    clearError(range)
-  }
-}
-
-function getValidationError(sheetName, colName, col, row, value, sheet) {
-  var str = (value === null || value === undefined) ? '' : String(value).trim()
-
-  // ── MODELOS ─────────────────────────────────────────────
-  if (sheetName === 'modelos') {
-    if (colName === 'modelo_id') {
-      if (str === '') return 'modelo_id no puede estar vacío'
-      if (hasDuplicate(sheet, col, row, str)) return 'modelo_id duplicado: ' + str
-    }
-    if (colName === 'tipo') {
-      if (TIPOS_VALIDOS.indexOf(str) === -1)
-        return 'tipo debe ser: ' + TIPOS_VALIDOS.join(', ')
-    }
-    if (colName === 'nombre') {
-      if (str === '') return 'nombre no puede estar vacío'
-    }
-    if (colName === 'imagen_principal') {
-      if (str !== '' && str.indexOf('http') !== 0)
-        return 'imagen_principal debe ser una URL (http...)'
-    }
-  }
-
-  // ── UNIDADES ─────────────────────────────────────────────
-  if (sheetName === 'unidades') {
-    if (colName === 'unidad_id') {
-      if (str === '') return 'unidad_id no puede estar vacío'
-      if (hasDuplicate(sheet, col, row, str)) return 'unidad_id duplicado: ' + str
-    }
-    if (colName === 'bateria') {
-      var bat = Number(value)
-      if (isNaN(bat) || bat < 0 || bat > 100)
-        return 'bateria debe ser un número entre 0 y 100'
-    }
-    if (colName === 'precio') {
-      var precio = Number(value)
-      if (isNaN(precio) || precio <= 0)
-        return 'precio debe ser mayor a 0'
-    }
-    if (colName === 'disponible') {
-      if (value !== true && value !== false && str !== 'TRUE' && str !== 'FALSE')
-        return 'disponible debe ser TRUE o FALSE'
-    }
-    if (colName === 'condicion') {
-      if (CONDICION_VALIDA.indexOf(str) === -1)
-        return 'condicion debe ser: ' + CONDICION_VALIDA.join(', ')
-    }
-    if (colName === 'imagen_url') {
-      if (str !== '' && str.indexOf('http') !== 0)
-        return 'imagen_url debe ser una URL (http...)'
-    }
-  }
-
-  // ── BANNERS ──────────────────────────────────────────────
-  if (sheetName === 'banners') {
-    if (colName === 'photo') {
-      if (str !== '' && str.indexOf('http') !== 0)
-        return 'photo debe ser una URL (http...)'
-    }
-  }
-
-  return null
-}
-
-// =============================================================
-// HELPERS
-// =============================================================
-
-function hasDuplicate(sheet, col, currentRow, value) {
-  var lastRow = sheet.getLastRow()
-  if (lastRow < 2) return false
-  var colValues = sheet.getRange(2, col, lastRow - 1, 1).getValues()
-  var count = 0
-  colValues.forEach(function(row, idx) {
-    if (String(row[0]).trim() === String(value).trim()) {
-      count++
-    }
-  })
-  return count > 1
-}
-
-function markError(range, message) {
-  range
-    .setBackground(COLOR.errorBg)
-    .setBorder(true, true, true, true, false, false, COLOR.errorBorder, SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
-  range.setNote('Error: ' + message)
-}
-
-function clearError(range) {
-  // Restaurar color alternado según fila
-  var row = range.getRow()
-  var bg  = (row % 2 === 0) ? COLOR.rowNormal : COLOR.rowAlt
-  range.setBackground(bg)
-  range.setBorder(false, false, false, false, false, false)
-  range.clearNote()
 }

@@ -2,16 +2,18 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f2f6ff;
-  --bg-soft: #e9f0ff;
+  --bg: #eef3fb;
+  --bg-soft: #e5edf9;
   --text: #0f172a;
-  --muted: #58657f;
-  --card: rgba(255, 255, 255, 0.72);
-  --line: rgba(156, 177, 226, 0.52);
+  --muted: #5d6b85;
+  --card: rgba(255, 255, 255, 0.8);
+  --line: rgba(141, 160, 201, 0.34);
   --primary: #0a84ff;
   --primary-strong: #0066d6;
   --hero-glow: rgba(10, 132, 255, 0.35);
-  --shadow-soft: 0 20px 44px -28px rgba(23, 39, 78, 0.45);
+  --shadow-soft: 0 24px 54px -32px rgba(15, 23, 42, 0.28);
+  --shadow-card: 0 30px 60px -36px rgba(15, 23, 42, 0.22);
+  --nav-bg: rgba(10, 15, 29, 0.84);
 }
 
 * {
@@ -39,7 +41,7 @@ body {
       rgba(38, 208, 255, 0.2),
       transparent 56%
     ),
-    linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 40%, #f6f9ff 100%);
+    linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 38%, #f8fbff 100%);
 }
 
 .brand-heading {
@@ -50,12 +52,46 @@ body {
 .surface-card {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.82) 0%,
-    rgba(246, 250, 255, 0.62) 100%
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(246, 250, 255, 0.72) 100%
   );
   border: 1px solid var(--line);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
   box-shadow: var(--shadow-soft);
+}
+
+.surface-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(242, 247, 255, 0.82) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(20px);
+}
+
+.section-shell {
+  position: relative;
+}
+
+.section-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 2rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6), transparent 36%),
+    radial-gradient(circle at top right, rgba(10, 132, 255, 0.08), transparent 32%);
+  pointer-events: none;
+}
+
+.pill-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 28px -22px rgba(15, 23, 42, 0.35);
 }
 
 .hero-orb {
