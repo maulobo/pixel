@@ -76,10 +76,11 @@ export default function TradeInWidget() {
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+              <label htmlFor="tradein-modelo" className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
                 Modelo
               </label>
               <select
+                id="tradein-modelo"
                 value={modelo}
                 onChange={(e) => setModelo(e.target.value)}
                 className="rounded-[1rem] border border-[var(--line)] bg-white/85 px-3 py-2.5 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] appearance-none"
@@ -92,10 +93,11 @@ export default function TradeInWidget() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+              <label htmlFor="tradein-storage" className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
                 Almacenamiento
               </label>
               <select
+                id="tradein-storage"
                 value={storage}
                 onChange={(e) => setStorage(e.target.value)}
                 className="rounded-[1rem] border border-[var(--line)] bg-white/85 px-3 py-2.5 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] appearance-none"
@@ -108,10 +110,11 @@ export default function TradeInWidget() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+              <label htmlFor="tradein-condicion" className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
                 Estado
               </label>
               <select
+                id="tradein-condicion"
                 value={condicion}
                 onChange={(e) => setCondicion(e.target.value)}
                 className="rounded-[1rem] border border-[var(--line)] bg-white/85 px-3 py-2.5 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] appearance-none"
