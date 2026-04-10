@@ -16,6 +16,7 @@ export function buildCartWhatsAppUrl(
   items: UnidadConModelo[],
   whatsapp: string,
   note?: string,
+  tradeIn?: { modelo: string; storage: string; condicion: string; valor: number } | null,
 ) {
   const lines = items.map((unidad, index) => {
     const attrs = Object.entries(unidad.atributos)
@@ -31,14 +32,23 @@ export function buildCartWhatsAppUrl(
     return `- ${parts.join(" · ")}`;
   });
 
-  const total = items.reduce((sum, item) => sum + item.modelo.precio, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.modelo.precio, 0);
+  const total = Math.max(0, subtotal - (tradeIn?.valor ?? 0));
   const sections = [
     "Hola! Quiero consultar por estos productos:",
     "",
     ...lines,
     "",
-    `Total estimado: $${total.toLocaleString("es-AR")}`,
   ];
+
+  if (tradeIn) {
+    sections.push(
+      `iPhone a dar en parte de pago: ${tradeIn.modelo} ${tradeIn.storage} · ${tradeIn.condicion} (−$${tradeIn.valor.toLocaleString("es-AR")})`,
+      "",
+    );
+  }
+
+  sections.push(`Total a pagar: $${total.toLocaleString("es-AR")}`);
 
   if (note?.trim()) {
     sections.push("", `Comentario: ${note.trim()}`);

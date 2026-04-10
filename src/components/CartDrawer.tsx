@@ -53,7 +53,7 @@ export default function CartDrawer() {
   const subtotal = items.reduce((sum, item) => sum + item.modelo.precio, 0);
   const total = Math.max(0, subtotal - (tradeIn?.valor ?? 0));
   const whatsappUrl =
-    items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note) : "#";
+    items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note, tradeIn) : "#";
 
   useEffect(() => {
     if (isCartOpen) {
@@ -242,7 +242,7 @@ export default function CartDrawer() {
                   Ver pagina del carrito
                 </Link>
                 <button
-                  onClick={clearCart}
+                  onClick={() => { clearCart(); clearTradeIn(); }}
                   className="w-full inline-flex items-center justify-center rounded-[1.2rem] border border-[#fecaca] bg-[#fff1f2] px-5 py-4 text-[#b42318] font-semibold hover:bg-[#ffe4e8] transition-colors"
                 >
                   Vaciar carrito

@@ -12,6 +12,7 @@ export default function CartPage() {
   const removeFromCart = useCatalogStore((s) => s.removeFromCart);
   const clearCart = useCatalogStore((s) => s.clearCart);
   const tradeIn = useCatalogStore((s) => s.tradeIn);
+  const clearTradeIn = useCatalogStore((s) => s.clearTradeIn);
   const [note, setNote] = useState("");
 
   const items = useMemo(
@@ -24,7 +25,7 @@ export default function CartPage() {
   const subtotal = items.reduce((sum, item) => sum + item.modelo.precio, 0);
   const total = Math.max(0, subtotal - (tradeIn?.valor ?? 0));
   const whatsappUrl =
-    items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note) : "#";
+    items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note, tradeIn) : "#";
 
   if (items.length === 0) {
     return (
@@ -203,7 +204,7 @@ export default function CartPage() {
           </a>
 
           <button
-            onClick={clearCart}
+            onClick={() => { clearCart(); clearTradeIn(); }}
             className="mt-3 w-full inline-flex items-center justify-center rounded-[1.3rem] border border-[var(--line)] bg-white/80 px-5 py-4 text-[var(--text)] font-semibold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors"
           >
             Vaciar carrito
