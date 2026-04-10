@@ -12,6 +12,13 @@ interface Filters {
   condicion: string;
 }
 
+interface TradeIn {
+  modelo: string;
+  storage: string;
+  condicion: string;
+  valor: number;
+}
+
 interface CatalogStore {
   catalog: UnidadConModelo[];
   config: SiteConfig | null;
@@ -20,6 +27,9 @@ interface CatalogStore {
   filters: Filters;
   cart: string[];
   isCartOpen: boolean;
+  tradeIn: TradeIn | null;
+  setTradeIn: (t: TradeIn) => void;
+  clearTradeIn: () => void;
   setCatalog: (catalog: UnidadConModelo[]) => void;
   setConfig: (config: SiteConfig) => void;
   setLoading: (loading: boolean) => void;
@@ -55,6 +65,7 @@ export const useCatalogStore = create<CatalogStore>()(
       filters: DEFAULT_FILTERS,
       cart: [],
       isCartOpen: false,
+      tradeIn: null,
 
       setCatalog: (catalog) => set({ catalog }),
       setConfig: (config) => set({ config }),
@@ -81,6 +92,8 @@ export const useCatalogStore = create<CatalogStore>()(
       openCart: () => set({ isCartOpen: true }),
       closeCart: () => set({ isCartOpen: false }),
       toggleCartDrawer: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
+      setTradeIn: (t) => set({ tradeIn: t }),
+      clearTradeIn: () => set({ tradeIn: null }),
     }),
     {
       name: "pixel-cart",
