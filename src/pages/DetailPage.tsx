@@ -4,6 +4,7 @@ import { useCatalogStore } from "../store/catalogStore";
 import { getCommercialState } from "../lib/condition";
 import { buildUnitWhatsAppUrl } from "../lib/whatsapp";
 import type { UnidadConModelo } from "../types";
+import TradeInWidget from "../components/TradeInWidget";
 
 function BatteryBar({ value }: { value: number }) {
   if (value === 0) return null;
@@ -322,6 +323,10 @@ export default function DetailPage() {
                 {inCart ? "Quitar del carrito" : "Agregar al carrito"}
               </button>
             </div>
+          </div>
+
+          <div className="pt-6">
+            <TradeInWidget />
           </div>
         </aside>
       </div>
