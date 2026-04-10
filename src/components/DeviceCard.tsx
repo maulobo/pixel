@@ -8,9 +8,9 @@ interface Props {
 export default function DeviceCard({ group }: Props) {
   const { modelo, unidades } = group;
 
-  const uniqueColors = [...new Set(unidades.map((u) => u.color).filter(Boolean))];
-  const uniqueCapacidades = [...new Set(unidades.map((u) => u.capacidad).filter(Boolean))];
-  const minPrecio = unidades.reduce((min, u) => Math.min(min, u.precio), Infinity);
+  const uniqueColors = [...new Set(unidades.map((u) => u.atributos.color).filter(Boolean))];
+  const uniqueCapacidades = [...new Set(unidades.map((u) => u.atributos.capacidad).filter(Boolean))];
+  const minPrecio = modelo.precio;
   const hasVariants = uniqueColors.length > 1 || uniqueCapacidades.length > 1;
 
   return (
@@ -80,13 +80,15 @@ export default function DeviceCard({ group }: Props) {
 
           {!hasVariants && unidades[0] && (
             <div className="flex flex-wrap gap-1.5 text-xs text-[var(--muted)]">
-              {unidades[0].color && (
-                <span className="bg-[#edf2ff] px-2 py-1 rounded-full">{unidades[0].color}</span>
+              {unidades[0].atributos.color && (
+                <span className="bg-[#edf2ff] px-2 py-1 rounded-full">{unidades[0].atributos.color}</span>
               )}
-              {unidades[0].capacidad && (
-                <span className="bg-[#edf2ff] px-2 py-1 rounded-full">{unidades[0].capacidad}</span>
+              {unidades[0].atributos.capacidad && (
+                <span className="bg-[#edf2ff] px-2 py-1 rounded-full">{unidades[0].atributos.capacidad}</span>
               )}
-              <span className="bg-[#edf2ff] px-2 py-1 rounded-full">{unidades[0].condicion}</span>
+              {unidades[0].atributos.condicion && (
+                <span className="bg-[#edf2ff] px-2 py-1 rounded-full">{unidades[0].atributos.condicion}</span>
+              )}
             </div>
           )}
 

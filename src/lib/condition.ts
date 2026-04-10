@@ -2,9 +2,10 @@ export type CommercialState = "nuevo" | "usado";
 
 export function getCommercialState(
   condicion: string,
-  bateria: number,
+  bateria: string | number,
 ): CommercialState {
   const c = condicion.trim().toLowerCase();
+  const bateriaNum = typeof bateria === "string" ? Number(bateria) : bateria;
 
   if (
     c.includes("nuevo") ||
@@ -15,8 +16,7 @@ export function getCommercialState(
     return "nuevo";
   }
 
-  // Heuristic for second-hand catalogs: excellent condition + high battery behaves as "like new".
-  if (c.includes("excelente") && bateria >= 90) {
+  if (c.includes("excelente") && bateriaNum >= 90) {
     return "nuevo";
   }
 

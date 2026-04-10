@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase, signInAdmin, signOutAdmin, uploadAdminImage, isAllowedAdminEmail, IMAGE_BUCKET, CLIENT_ID } from "../lib/supabase";
+import {
+  supabaseAdmin,
+  signInAdmin,
+  signOutAdmin,
+  uploadAdminImage,
+  isAllowedAdminEmail,
+  IMAGE_BUCKET,
+  CLIENT_ID,
+} from "../lib/supabase";
 
 type UploadResult = {
   path: string;
@@ -164,7 +172,7 @@ export default function AdminUploadPage() {
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabaseAdmin.auth.getSession().then(({ data }) => {
       if (!active) return;
       setSession(data.session);
       setAuthLoading(false);
@@ -172,7 +180,7 @@ export default function AdminUploadPage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    } = supabaseAdmin.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
       setAuthLoading(false);
     });

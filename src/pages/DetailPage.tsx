@@ -69,11 +69,15 @@ function VariantPills({
 export default function DetailPage() {
   const { modeloId } = useParams();
   const catalog = useCatalogStore((s) => s.catalog);
+  const config = useCatalogStore((s) => s.config);
   const whatsapp = useCatalogStore((s) => s.config?.whatsapp ?? "");
   const cart = useCatalogStore((s) => s.cart);
   const addToCart = useCatalogStore((s) => s.addToCart);
   const removeFromCart = useCatalogStore((s) => s.removeFromCart);
   const openCart = useCatalogStore((s) => s.openCart);
+
+  const varianteKeys = config?.variante_keys ?? [];
+  const varianteLabels = config?.variante_labels ?? {};
 
   const units = useMemo(
     () => catalog.filter((u) => u.modelo_id === modeloId),
@@ -83,39 +87,31 @@ export default function DetailPage() {
   const [selectedUnidad, setSelectedUnidad] = useState<UnidadConModelo | null>(null);
 
   useEffect(() => {
-    const cheapest = [...units].sort((a, b) => a.precio - b.precio)[0] ?? null;
-    setSelectedUnidad(cheapest);
+    setSelectedUnidad(units[0] ?? null);
   }, [modeloId, units]);
 
-  const uniqueColors = useMemo(
-    () => [...new Set(units.map((u) => u.color).filter(Boolean))],
-    [units],
-  );
-  const uniqueCapacidades = useMemo(
-    () => [...new Set(units.map((u) => u.capacidad).filter(Boolean))],
-    [units],
-  );
+  // Unique values per variante key
+  const uniqueValues = useMemo(() => {
+    const result: Record<string, string[]> = {};
+    for (const key of varianteKeys) {
+      result[key] = [...new Set(units.map((u) => u.atributos[key]).filter(Boolean))];
+    }
+    return result;
+  }, [units, varianteKeys]);
 
-  function selectColor(color: string) {
-    const match = units.find(
-      (u) => u.color === color && u.capacidad === selectedUnidad?.capacidad,
-    );
+  function selectVariante(key: string, value: string) {
+    const current = selectedUnidad?.atributos ?? {};
+    // Try to find exact match with all current selections + new value
+    const match = units.find((u) => {
+      return varianteKeys.every((k) => {
+        if (k === key) return u.atributos[k] === value;
+        return !current[k] || u.atributos[k] === current[k];
+      });
+    });
     if (match) { setSelectedUnidad(match); return; }
-    const cheapest = [...units]
-      .filter((u) => u.color === color)
-      .sort((a, b) => a.precio - b.precio)[0];
-    if (cheapest) setSelectedUnidad(cheapest);
-  }
-
-  function selectCapacidad(capacidad: string) {
-    const match = units.find(
-      (u) => u.capacidad === capacidad && u.color === selectedUnidad?.color,
-    );
-    if (match) { setSelectedUnidad(match); return; }
-    const cheapest = [...units]
-      .filter((u) => u.capacidad === capacidad)
-      .sort((a, b) => a.precio - b.precio)[0];
-    if (cheapest) setSelectedUnidad(cheapest);
+    // Fallback: just match the selected key
+    const fallback = units.find((u) => u.atributos[key] === value);
+    if (fallback) setSelectedUnidad(fallback);
   }
 
   if (units.length === 0 || !selectedUnidad) {
@@ -132,8 +128,11 @@ export default function DetailPage() {
     );
   }
 
-  const state = getCommercialState(selectedUnidad.condicion, selectedUnidad.bateria);
+  const condicion = selectedUnidad.atributos.condicion ?? "";
+  const bateria = Number(selectedUnidad.atributos.bateria ?? 0);
+  const state = getCommercialState(condicion, bateria);
   const inCart = cart.includes(selectedUnidad.unidad_id);
+  const imagen = selectedUnidad.imagen_1 || selectedUnidad.modelo.imagen_principal;
 
   function handleCartAction() {
     if (inCart) {
@@ -160,15 +159,17 @@ export default function DetailPage() {
               <span className="inline-flex rounded-full bg-[var(--primary)]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--primary)]">
                 {selectedUnidad.modelo.categoria}
               </span>
-              <span
-                className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
-                  state === "nuevo"
-                    ? "bg-[#d9ecff] text-[#0066d6]"
-                    : "bg-[#eef2f6] text-[#334155]"
-                }`}
-              >
-                {state === "nuevo" ? "Nuevo" : "Usado"}
-              </span>
+              {condicion && (
+                <span
+                  className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${
+                    state === "nuevo"
+                      ? "bg-[#d9ecff] text-[#0066d6]"
+                      : "bg-[#eef2f6] text-[#334155]"
+                  }`}
+                >
+                  {state === "nuevo" ? "Nuevo" : "Usado"}
+                </span>
+              )}
               <span className="inline-flex rounded-full bg-white/80 border border-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
                 Ref. {selectedUnidad.unidad_id}
               </span>
@@ -179,8 +180,8 @@ export default function DetailPage() {
               <div className="absolute -top-12 right-[-20px] h-40 w-40 rounded-full bg-[var(--primary)]/12 blur-3xl" />
               <div className="absolute -bottom-14 left-[-10px] h-44 w-44 rounded-full bg-[#7dd3fc]/18 blur-3xl" />
               <img
-                src={selectedUnidad.imagen_url || selectedUnidad.modelo.imagen_principal}
-                alt={`${selectedUnidad.modelo.nombre} ${selectedUnidad.color}`}
+                src={imagen}
+                alt={selectedUnidad.modelo.nombre}
                 className="relative z-10 max-h-[420px] w-full object-contain px-8 drop-shadow-[0_40px_35px_rgba(15,23,42,0.18)]"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
@@ -192,30 +193,21 @@ export default function DetailPage() {
 
           <div className="px-1 md:px-2">
             <div className="flex flex-wrap gap-3 mb-5">
-              {selectedUnidad.color && (
-                <span className="pill-muted text-[var(--text)]">{selectedUnidad.color}</span>
-              )}
-              {selectedUnidad.capacidad && (
-                <span className="pill-muted text-[var(--text)]">{selectedUnidad.capacidad}</span>
-              )}
-              <span className="pill-muted text-[var(--text)]">{selectedUnidad.condicion}</span>
+              {varianteKeys.map((key) => {
+                const val = selectedUnidad.atributos[key];
+                if (!val) return null;
+                return (
+                  <span key={key} className="pill-muted text-[var(--text)]">{val}</span>
+                );
+              })}
             </div>
 
             <h2 className="text-xl font-semibold text-[var(--text)] mb-2">
               Sobre el {selectedUnidad.modelo.nombre}
             </h2>
-            <p className="text-[15px] text-[var(--muted)] leading-7 mb-5">
-              {selectedUnidad.modelo.descripcion_general}
+            <p className="text-[15px] text-[var(--muted)] leading-7">
+              {selectedUnidad.modelo.descripcion}
             </p>
-
-            <div className="border-t border-[var(--line)] pt-5">
-              <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)] font-semibold mb-2">
-                Especificaciones destacadas
-              </p>
-              <p className="text-sm text-[var(--text)] leading-7">
-                {selectedUnidad.modelo.specs}
-              </p>
-            </div>
           </div>
         </section>
 
@@ -228,23 +220,20 @@ export default function DetailPage() {
               {selectedUnidad.modelo.nombre}
             </h1>
             <p className="text-lg text-[var(--muted)] mt-3">
-              {selectedUnidad.capacidad} · {selectedUnidad.color}
+              {varianteKeys.map((k) => selectedUnidad.atributos[k]).filter(Boolean).join(" · ")}
             </p>
 
-            {(uniqueColors.length > 1 || uniqueCapacidades.length > 1) && (
+            {varianteKeys.some((k) => (uniqueValues[k]?.length ?? 0) > 1) && (
               <div className="mt-6 space-y-5">
-                <VariantPills
-                  label="Color"
-                  options={uniqueColors}
-                  selected={selectedUnidad.color}
-                  onSelect={selectColor}
-                />
-                <VariantPills
-                  label="Capacidad"
-                  options={uniqueCapacidades}
-                  selected={selectedUnidad.capacidad}
-                  onSelect={selectCapacidad}
-                />
+                {varianteKeys.map((key) => (
+                  <VariantPills
+                    key={key}
+                    label={varianteLabels[key] ?? key}
+                    options={uniqueValues[key] ?? []}
+                    selected={selectedUnidad.atributos[key] ?? ""}
+                    onSelect={(v) => selectVariante(key, v)}
+                  />
+                ))}
               </div>
             )}
 
@@ -254,7 +243,7 @@ export default function DetailPage() {
                   Precio publicado
                 </p>
                 <p className="text-5xl font-extrabold text-[var(--text)] tracking-[-0.04em]">
-                  ${selectedUnidad.precio.toLocaleString("es-AR")}
+                  ${selectedUnidad.modelo.precio.toLocaleString("es-AR")}
                 </p>
               </div>
               <div className="text-[#128c7e] px-1 py-1 text-sm font-semibold uppercase tracking-[0.16em]">
@@ -274,18 +263,20 @@ export default function DetailPage() {
             </div>
 
             <div className="grid gap-1 border-t border-[var(--line)] pt-4">
-              <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
-                <p className="text-sm text-[var(--muted)]">Condicion</p>
-                <p className="text-sm font-semibold text-[var(--text)] text-right">
-                  {selectedUnidad.condicion}
-                </p>
-              </div>
-              <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
-                <p className="text-sm text-[var(--muted)]">Capacidad</p>
-                <p className="text-sm font-semibold text-[var(--text)] text-right">
-                  {selectedUnidad.capacidad || "No especificada"}
-                </p>
-              </div>
+              {condicion && (
+                <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
+                  <p className="text-sm text-[var(--muted)]">Condicion</p>
+                  <p className="text-sm font-semibold text-[var(--text)] text-right">{condicion}</p>
+                </div>
+              )}
+              {selectedUnidad.atributos.capacidad && (
+                <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
+                  <p className="text-sm text-[var(--muted)]">Capacidad</p>
+                  <p className="text-sm font-semibold text-[var(--text)] text-right">
+                    {selectedUnidad.atributos.capacidad}
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-between gap-4 py-3 border-b border-[var(--line)]/70">
                 <p className="text-sm text-[var(--muted)]">Referencia</p>
                 <p className="text-sm font-semibold text-[var(--text)] text-right">
@@ -294,18 +285,9 @@ export default function DetailPage() {
               </div>
             </div>
 
-            <div className="pt-1">
-              <BatteryBar value={selectedUnidad.bateria} />
-            </div>
-
-            {selectedUnidad.descripcion_particular && (
-              <div className="border-t border-[var(--line)] pt-6">
-                <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted)] font-semibold mb-2">
-                  Notas de la unidad
-                </p>
-                <p className="text-sm text-[var(--text)] leading-relaxed">
-                  {selectedUnidad.descripcion_particular}
-                </p>
+            {bateria > 0 && (
+              <div className="pt-1">
+                <BatteryBar value={bateria} />
               </div>
             )}
 

@@ -5,7 +5,10 @@ function encodeMessage(message: string) {
 }
 
 export function buildUnitWhatsAppUrl(unidad: UnidadConModelo, whatsapp: string) {
-  const msg = `Hola! Me interesa el ${unidad.modelo.nombre} ${unidad.capacidad} ${unidad.color} (ref: ${unidad.unidad_id}). ¿Está disponible?`;
+  const capacidad = unidad.atributos.capacidad ?? "";
+  const color = unidad.atributos.color ?? "";
+  const parts = [unidad.modelo.nombre, capacidad, color].filter(Boolean).join(" ");
+  const msg = `Hola! Me interesa el ${parts} (ref: ${unidad.unidad_id}). ¿Está disponible?`;
   return `https://wa.me/${whatsapp}?text=${encodeMessage(msg)}`;
 }
 
@@ -15,18 +18,20 @@ export function buildCartWhatsAppUrl(
   note?: string,
 ) {
   const lines = items.map((unidad, index) => {
+    const attrs = Object.entries(unidad.atributos)
+      .filter(([, v]) => v)
+      .map(([, v]) => v);
     const parts = [
       `${index + 1}. ${unidad.modelo.nombre}`,
-      unidad.capacidad,
-      unidad.color,
+      ...attrs,
       `ref: ${unidad.unidad_id}`,
-      `$${unidad.precio.toLocaleString("es-AR")}`,
+      `$${unidad.modelo.precio.toLocaleString("es-AR")}`,
     ].filter(Boolean);
 
     return `- ${parts.join(" · ")}`;
   });
 
-  const total = items.reduce((sum, item) => sum + item.precio, 0);
+  const total = items.reduce((sum, item) => sum + item.modelo.precio, 0);
   const sections = [
     "Hola! Quiero consultar por estos productos:",
     "",

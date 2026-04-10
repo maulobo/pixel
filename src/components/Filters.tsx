@@ -7,18 +7,20 @@ export default function Filters() {
   const setFilter = useCatalogStore((s) => s.setFilter);
   const resetFilters = useCatalogStore((s) => s.resetFilters);
 
-  const categorias = [
-    ...new Set(catalog.map((u) => u.modelo.categoria)),
-  ].sort();
+  const categorias = [...new Set(catalog.map((u) => u.modelo.categoria))].sort();
   const modelos = [...new Set(catalog.map((u) => u.modelo.nombre))].sort();
-  const colores = [...new Set(catalog.map((u) => u.color))].sort();
-  const condiciones = [...new Set(catalog.map((u) => u.condicion))].sort();
+  const colores = [...new Set(catalog.map((u) => u.atributos.color).filter(Boolean))].sort();
+  const condiciones = [...new Set(catalog.map((u) => u.atributos.condicion).filter(Boolean))].sort();
+
   const nuevosCount = catalog.filter(
-    (u) => getCommercialState(u.condicion, u.bateria) === "nuevo",
+    (u) => getCommercialState(u.atributos.condicion ?? "", u.atributos.bateria ?? 0) === "nuevo",
   ).length;
   const usadosCount = catalog.length - nuevosCount;
-  const precios = catalog.map((u) => u.precio);
+
+  const precios = catalog.map((u) => u.modelo.precio);
   const maxPrecio = precios.length ? Math.max(...precios) : 9999999;
+
+  const hasBateria = catalog.some((u) => u.atributos.bateria);
 
   return (
     <aside className="w-full lg:w-64 shrink-0">
@@ -84,87 +86,96 @@ export default function Filters() {
         </div>
 
         {/* Color */}
-        <div>
-          <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
-            Color
-          </p>
-          <select
-            value={filters.color}
-            onChange={(e) => setFilter("color", e.target.value)}
-            className="w-full text-sm bg-white/85 border border-[var(--line)] rounded-xl px-3 py-2 text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-          >
-            <option value="">Todos</option>
-            {colores.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Condición */}
-        <div>
-          <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
-            Estado
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setFilter("condicion", "__nuevo__")}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                filters.condicion === "__nuevo__"
-                  ? "bg-[#0a84ff] text-white border-[#0a84ff]"
-                  : "bg-white/85 text-[var(--text)] border-[var(--line)] hover:border-[#8fa8dd]"
-              }`}
+        {colores.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
+              Color
+            </p>
+            <select
+              value={filters.color}
+              onChange={(e) => setFilter("color", e.target.value)}
+              className="w-full text-sm bg-white/85 border border-[var(--line)] rounded-xl px-3 py-2 text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             >
-              Nuevos ({nuevosCount})
-            </button>
-            <button
-              onClick={() => setFilter("condicion", "__usado__")}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                filters.condicion === "__usado__"
-                  ? "bg-[#111827] text-white border-[#111827]"
-                  : "bg-white/85 text-[var(--text)] border-[var(--line)] hover:border-[#8fa8dd]"
-              }`}
-            >
-              Usados ({usadosCount})
-            </button>
+              <option value="">Todos</option>
+              {colores.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
+        )}
 
-        <div>
-          <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
-            Condicion
-          </p>
-          <select
-            value={filters.condicion.startsWith("__") ? "" : filters.condicion}
-            onChange={(e) => setFilter("condicion", e.target.value)}
-            className="w-full text-sm bg-white/85 border border-[var(--line)] rounded-xl px-3 py-2 text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-          >
-            <option value="">Todas</option>
-            {condiciones.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Estado Nuevo/Usado */}
+        {condiciones.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
+              Estado
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setFilter("condicion", "__nuevo__")}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  filters.condicion === "__nuevo__"
+                    ? "bg-[#0a84ff] text-white border-[#0a84ff]"
+                    : "bg-white/85 text-[var(--text)] border-[var(--line)] hover:border-[#8fa8dd]"
+                }`}
+              >
+                Nuevos ({nuevosCount})
+              </button>
+              <button
+                onClick={() => setFilter("condicion", "__usado__")}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  filters.condicion === "__usado__"
+                    ? "bg-[#111827] text-white border-[#111827]"
+                    : "bg-white/85 text-[var(--text)] border-[var(--line)] hover:border-[#8fa8dd]"
+                }`}
+              >
+                Usados ({usadosCount})
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Condicion exacta */}
+        {condiciones.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
+              Condicion
+            </p>
+            <select
+              value={filters.condicion.startsWith("__") ? "" : filters.condicion}
+              onChange={(e) => setFilter("condicion", e.target.value)}
+              className="w-full text-sm bg-white/85 border border-[var(--line)] rounded-xl px-3 py-2 text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            >
+              <option value="">Todas</option>
+              {condiciones.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Batería */}
-        <div>
-          <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
-            Batería mínima:{" "}
-            {filters.bateriaMin > 0 ? `${filters.bateriaMin}%` : "Todas"}
-          </p>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={5}
-            value={filters.bateriaMin}
-            onChange={(e) => setFilter("bateriaMin", Number(e.target.value))}
-            className="w-full accent-[var(--primary)]"
-          />
-        </div>
+        {hasBateria && (
+          <div>
+            <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
+              Batería mínima:{" "}
+              {filters.bateriaMin > 0 ? `${filters.bateriaMin}%` : "Todas"}
+            </p>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={filters.bateriaMin}
+              onChange={(e) => setFilter("bateriaMin", Number(e.target.value))}
+              className="w-full accent-[var(--primary)]"
+            />
+          </div>
+        )}
 
         {/* Precio */}
         <div>

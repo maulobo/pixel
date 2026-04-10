@@ -8,6 +8,7 @@ export default function CartPage() {
   const catalog = useCatalogStore((s) => s.catalog);
   const cart = useCatalogStore((s) => s.cart);
   const whatsapp = useCatalogStore((s) => s.config?.whatsapp ?? "");
+  const varianteKeys = useCatalogStore((s) => s.config?.variante_keys ?? []);
   const removeFromCart = useCatalogStore((s) => s.removeFromCart);
   const clearCart = useCatalogStore((s) => s.clearCart);
   const [note, setNote] = useState("");
@@ -19,7 +20,7 @@ export default function CartPage() {
         .filter((item): item is UnidadConModelo => Boolean(item)),
     [cart, catalog],
   );
-  const total = items.reduce((sum, item) => sum + item.precio, 0);
+  const total = items.reduce((sum, item) => sum + item.modelo.precio, 0);
   const whatsappUrl =
     items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note) : "#";
 
@@ -87,7 +88,7 @@ export default function CartPage() {
                 className="w-full sm:w-36 h-36 rounded-[1.5rem] bg-gradient-to-br from-[#edf4ff] via-white to-[#dcecff] flex items-center justify-center p-4"
               >
                 <img
-                  src={unidad.imagen_url || unidad.modelo.imagen_principal}
+                  src={unidad.imagen_1 || unidad.modelo.imagen_principal}
                   alt={unidad.modelo.nombre}
                   className="w-full h-full object-contain"
                 />
@@ -106,12 +107,12 @@ export default function CartPage() {
                       {unidad.modelo.nombre}
                     </Link>
                     <p className="text-sm text-[var(--muted)] mt-1">
-                      {unidad.capacidad} · {unidad.color} · Ref. {unidad.unidad_id}
+                      {varianteKeys.map((k) => unidad.atributos[k]).filter(Boolean).join(" · ")} · Ref. {unidad.unidad_id}
                     </p>
                   </div>
 
                   <p className="text-xl font-extrabold text-[var(--text)]">
-                    ${unidad.precio.toLocaleString("es-AR")}
+                    ${unidad.modelo.precio.toLocaleString("es-AR")}
                   </p>
                 </div>
 

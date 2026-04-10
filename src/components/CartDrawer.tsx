@@ -4,6 +4,8 @@ import { useCatalogStore } from "../store/catalogStore";
 import { buildCartWhatsAppUrl } from "../lib/whatsapp";
 import type { UnidadConModelo } from "../types";
 
+const EMPTY_VARIANTE_KEYS: string[] = [];
+
 function CartIcon() {
   return (
     <svg
@@ -29,6 +31,9 @@ export default function CartDrawer() {
   const cart = useCatalogStore((s) => s.cart);
   const isCartOpen = useCatalogStore((s) => s.isCartOpen);
   const whatsapp = useCatalogStore((s) => s.config?.whatsapp ?? "");
+  const varianteKeys = useCatalogStore(
+    (s) => s.config?.variante_keys ?? EMPTY_VARIANTE_KEYS,
+  );
   const removeFromCart = useCatalogStore((s) => s.removeFromCart);
   const clearCart = useCatalogStore((s) => s.clearCart);
   const closeCart = useCatalogStore((s) => s.closeCart);
@@ -43,25 +48,18 @@ export default function CartDrawer() {
         .filter((item): item is UnidadConModelo => Boolean(item)),
     [cart, catalog],
   );
-  const total = items.reduce((sum, item) => sum + item.precio, 0);
+  const total = items.reduce((sum, item) => sum + item.modelo.precio, 0);
   const whatsappUrl =
     items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note) : "#";
 
   useEffect(() => {
     if (isCartOpen) {
       setShouldRender(true);
-      const timeout = window.setTimeout(() => {
-        setIsVisible(true);
-      }, 16);
-
+      const timeout = window.setTimeout(() => setIsVisible(true), 16);
       return () => window.clearTimeout(timeout);
     }
-
     setIsVisible(false);
-    const timeout = window.setTimeout(() => {
-      setShouldRender(false);
-    }, 260);
-
+    const timeout = window.setTimeout(() => setShouldRender(false), 260);
     return () => window.clearTimeout(timeout);
   }, [isCartOpen]);
 
@@ -69,10 +67,7 @@ export default function CartDrawer() {
     if (!shouldRender) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
+    return () => { document.body.style.overflow = previousOverflow; };
   }, [shouldRender]);
 
   if (!shouldRender) return null;
@@ -145,7 +140,7 @@ export default function CartDrawer() {
                       className="w-24 h-24 rounded-[1.25rem] bg-gradient-to-br from-[#edf4ff] via-white to-[#dcecff] flex items-center justify-center p-3 shrink-0"
                     >
                       <img
-                        src={unidad.imagen_url || unidad.modelo.imagen_principal}
+                        src={unidad.imagen_1 || unidad.modelo.imagen_principal}
                         alt={unidad.modelo.nombre}
                         className="w-full h-full object-contain"
                       />
@@ -163,14 +158,14 @@ export default function CartDrawer() {
                         {unidad.modelo.nombre}
                       </Link>
                       <p className="text-sm text-[var(--muted)] mt-1">
-                        {unidad.capacidad} · {unidad.color}
+                        {varianteKeys.map((k) => unidad.atributos[k]).filter(Boolean).join(" · ")}
                       </p>
                       <p className="text-sm text-[var(--muted)]">
                         Ref. {unidad.unidad_id}
                       </p>
                       <div className="mt-3 flex items-center justify-between gap-3">
                         <p className="text-base font-extrabold text-[var(--text)]">
-                          ${unidad.precio.toLocaleString("es-AR")}
+                          ${unidad.modelo.precio.toLocaleString("es-AR")}
                         </p>
                         <button
                           onClick={() => removeFromCart(unidad.unidad_id)}

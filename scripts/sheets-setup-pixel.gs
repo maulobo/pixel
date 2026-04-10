@@ -40,21 +40,16 @@ function installTriggers() {
   var ui = SpreadsheetApp.getUi();
 
   if (editTriggerInstalled()) {
-    ui.alert(
-      "Pixel",
-      "✅ El sync automático ya estaba activado.",
-      ui.ButtonSet.OK,
-    );
+    ui.alert("Pixel", "✅ El sync automático ya estaba activado.", ui.ButtonSet.OK);
     return;
   }
 
-  ScriptApp.newTrigger("onEditDebounced").forSpreadsheet(ss).onEdit().create();
+  ScriptApp.newTrigger("onEditDebounced")
+    .forSpreadsheet(ss)
+    .onEdit()
+    .create();
 
-  ui.alert(
-    "Pixel",
-    "✅ Sync automático activado.\nCada cambio en el Sheet se sincronizará a Supabase en ~1 minuto.",
-    ui.ButtonSet.OK,
-  );
+  ui.alert("Pixel", "✅ Sync automático activado.\nCada cambio en el Sheet se sincronizará a Supabase en ~1 minuto.", ui.ButtonSet.OK);
 }
 
 // =============================================================
@@ -75,10 +70,8 @@ function uploadToSupabase(fileInfo) {
   if (!activeCell) throw new Error("Seleccioná una celda primero.");
 
   var bucketName = props.getProperty("STORAGE_BUCKET") || "media";
-  var fileName =
-    new Date().getTime() + "_" + fileInfo.name.replace(/\s+/g, "_");
-  var uploadUrl =
-    SUPABASE_URL + "/storage/v1/object/" + bucketName + "/" + fileName;
+  var fileName = new Date().getTime() + "_" + fileInfo.name.replace(/\s+/g, "_");
+  var uploadUrl = SUPABASE_URL + "/storage/v1/object/" + bucketName + "/" + fileName;
 
   var blob = Utilities.newBlob(
     Utilities.base64Decode(fileInfo.base64),
@@ -101,8 +94,7 @@ function uploadToSupabase(fileInfo) {
     throw new Error("Supabase Storage error: " + response.getContentText());
   }
 
-  var publicUrl =
-    SUPABASE_URL + "/storage/v1/object/public/" + bucketName + "/" + fileName;
+  var publicUrl = SUPABASE_URL + "/storage/v1/object/public/" + bucketName + "/" + fileName;
   activeCell.setValue(publicUrl);
   return publicUrl;
 }
@@ -182,7 +174,7 @@ function syncAll() {
 }
 
 // Columnas estándar de unidades — el resto va al JSONB atributos
-var UNIDAD_STANDARD_COLS = ["unidad_id", "modelo_id", "disponible"];
+var UNIDAD_STANDARD_COLS = ["unidad_id", "modelo_id", "disponible", "imagen_1", "imagen_2", "imagen_3"];
 
 function buildUnidadesData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -192,9 +184,7 @@ function buildUnidadesData() {
   var headers = sheet
     .getRange(1, 1, 1, sheet.getLastColumn())
     .getValues()[0]
-    .map(function (h) {
-      return String(h).trim().toLowerCase();
-    });
+    .map(function (h) { return String(h).trim().toLowerCase(); });
 
   var rows = sheet
     .getRange(2, 1, sheet.getLastRow() - 1, headers.length)
@@ -259,9 +249,7 @@ function syncModelosYUnidades() {
           "\n\nCorregí el modelo_id antes de sincronizar.",
       );
     } catch (e) {
-      Logger.log(
-        "SYNC CANCELADO — unidades huérfanas:\n" + huerfanas.join("\n"),
-      );
+      Logger.log("SYNC CANCELADO — unidades huérfanas:\n" + huerfanas.join("\n"));
     }
     return;
   }
@@ -401,13 +389,7 @@ function syncCategorias() {
     if (!nombre) return;
     var web = String(r[1]).trim().toUpperCase() !== "FALSE";
     var imagen = String(r[2]).trim() || null;
-    data.push({
-      client_id: CLIENT_ID,
-      nombre: nombre,
-      orden: i,
-      web: web,
-      imagen: imagen,
-    });
+    data.push({ client_id: CLIENT_ID, nombre: nombre, orden: i, web: web, imagen: imagen });
   });
 
   if (data.length === 0) return;
@@ -449,7 +431,7 @@ function syncPaleta() {
   var data = [];
   rows.forEach(function (r) {
     var nombre = String(r[0]).trim();
-    var hex = String(r[1]).trim();
+    var hex    = String(r[1]).trim();
     if (!nombre || !hex) return;
     data.push({ client_id: CLIENT_ID, nombre: nombre, hex: hex });
   });

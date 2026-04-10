@@ -28,17 +28,19 @@ export default function CatalogPage() {
     const filtered = catalog.filter((u) => {
       if (filters.categoria && u.modelo.categoria !== filters.categoria) return false;
       if (filters.modelo && u.modelo_id !== filters.modelo) return false;
-      if (filters.color && u.color !== filters.color) return false;
-      if (u.precio < filters.precioMin || u.precio > filters.precioMax) return false;
-      if (filters.bateriaMin > 0 && u.bateria < filters.bateriaMin) return false;
+      if (filters.color && u.atributos.color !== filters.color) return false;
+      if (u.modelo.precio < filters.precioMin || u.modelo.precio > filters.precioMax) return false;
+      const bateria = Number(u.atributos.bateria ?? 0);
+      if (filters.bateriaMin > 0 && bateria < filters.bateriaMin) return false;
       if (filters.condicion) {
-        const state = getCommercialState(u.condicion, u.bateria);
+        const condicion = u.atributos.condicion ?? "";
+        const state = getCommercialState(condicion, bateria);
         if (filters.condicion === "__nuevo__" && state !== "nuevo") return false;
         if (filters.condicion === "__usado__" && state !== "usado") return false;
         if (
           filters.condicion !== "__nuevo__" &&
           filters.condicion !== "__usado__" &&
-          u.condicion !== filters.condicion
+          condicion !== filters.condicion
         )
           return false;
       }

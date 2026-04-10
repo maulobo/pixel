@@ -1,0 +1,26 @@
+key,value
+# ── TIENDA ──────────────────────────,
+nombre_tienda,Pixel 
+logo_url,https://
+color_primario,#0a84ff
+# ── HOME ────────────────────────────,
+hero_titulo,Tecnología reacondicionada
+hero_subtitulo,Al mejor precio. Todo revisado y garantizado.
+hero_badge,Envíos a todo el país
+# ── CONTACTO ────────────────────────,
+whatsapp,5491123456789
+instagram,@pixelstore
+email,
+# ── BANNERS ─────────────────────────,
+banner_1_foto,https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrZ-Gawx6Y6LPM36bvdZ1eYblgplp4WSq-Jg&s
+banner_1_titulo,MacBook Air
+banner_1_subtitulo,Superligera. Superchip M5.
+banner_2_foto,https://vytnhbxioqwzgtqlgbkh.supabase.co/storage/v1/object/public/pixel-gallery/cb991593-cb0e-4a25-860b-6962b7c1a27e/modelos/1775241914246-screenshot-2026-04-03-at-3-44-37-pm.webp
+banner_2_titulo,JBL 
+banner_2_subtitulo,JBL lidera el mercado
+banner_3_foto,https://
+banner_3_titulo,Banner 3
+banner_3_subtitulo,Descripción del banner
+banner_4_foto,
+banner_4_titulo,
+banner_4_subtitulo,

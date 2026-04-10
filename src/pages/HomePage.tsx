@@ -8,7 +8,7 @@ export default function HomePage() {
   const config = useCatalogStore((s) => s.config);
   const banners = config?.banners ?? [];
   const heroUnits = useMemo(
-    () => catalog.filter((u) => u.imagen_url || u.modelo.imagen_principal).slice(0, 3),
+    () => catalog.filter((u) => u.imagen_1 || u.modelo.imagen_principal).slice(0, 3),
     [catalog],
   );
 
@@ -21,9 +21,10 @@ export default function HomePage() {
       );
     });
     const lista = config?.categorias ?? [];
-    return lista.map((categoria) => ({
-      categoria,
-      count: countMap.get(categoria) ?? 0,
+    return lista.map((cat) => ({
+      nombre: cat.nombre,
+      imagen: cat.imagen,
+      count: countMap.get(cat.nombre) ?? 0,
     }));
   }, [catalog, config]);
 
@@ -108,7 +109,7 @@ export default function HomePage() {
                 {heroUnits[1] && (
                   <div className="absolute left-0 top-16 sm:left-8 lg:left-0 xl:left-6 w-40 sm:w-48 rounded-[1.8rem] bg-white/88 p-4 shadow-[0_30px_60px_-42px_rgba(15,23,42,0.45)] backdrop-blur-md">
                     <img
-                      src={heroUnits[1].imagen_url || heroUnits[1].modelo.imagen_principal}
+                      src={heroUnits[1].imagen_1 || heroUnits[1].modelo.imagen_principal}
                       alt={heroUnits[1].modelo.nombre}
                       className="h-32 sm:h-36 w-full object-contain drop-shadow-lg"
                     />
@@ -124,7 +125,7 @@ export default function HomePage() {
                 {heroUnits[0] && (
                   <div className="absolute left-1/2 top-2 -translate-x-1/2 w-[72%] max-w-[360px]">
                     <img
-                      src={heroUnits[0].imagen_url || heroUnits[0].modelo.imagen_principal}
+                      src={heroUnits[0].imagen_1 || heroUnits[0].modelo.imagen_principal}
                       alt={heroUnits[0].modelo.nombre}
                       className="w-full object-contain drop-shadow-[0_42px_45px_rgba(15,23,42,0.25)]"
                     />
@@ -134,7 +135,7 @@ export default function HomePage() {
                 {heroUnits[2] && (
                   <div className="absolute right-0 bottom-10 sm:right-8 lg:right-0 xl:right-6 w-40 sm:w-48 rounded-[1.8rem] bg-[#0f172a] text-white p-4 shadow-[0_30px_60px_-42px_rgba(15,23,42,0.75)]">
                     <img
-                      src={heroUnits[2].imagen_url || heroUnits[2].modelo.imagen_principal}
+                      src={heroUnits[2].imagen_1 || heroUnits[2].modelo.imagen_principal}
                       alt={heroUnits[2].modelo.nombre}
                       className="h-32 sm:h-36 w-full object-contain drop-shadow-lg"
                     />
@@ -178,10 +179,10 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            {categorias.map(({ categoria, count }, i) => (
+            {categorias.map(({ nombre, count }, i) => (
               <Link
-                key={categoria}
-                to={`/catalogo?categoria=${categoria}`}
+                key={nombre}
+                to={`/catalogo?categoria=${nombre}`}
                 className={`group relative overflow-hidden surface-panel hover:-translate-y-1 transition-all duration-300 rounded-[2rem] p-8 md:p-10 border border-white/80 flex flex-col justify-between h-64 md:h-72 animate-rise stagger-${Math.min(
                   i + 1,
                   3,
@@ -196,7 +197,7 @@ export default function HomePage() {
                     {count} {count === 1 ? "equipo" : "equipos"}
                   </span>
                   <h3 className="brand-heading text-4xl md:text-5xl font-bold text-[var(--text)] group-hover:text-[var(--primary)] transition-colors">
-                    {categoria}
+                    {nombre}
                   </h3>
                   <p className="mt-4 max-w-sm text-sm md:text-base text-[var(--muted)] leading-relaxed">
                     Seleccion filtrada para comparar rapido, responder consultas y cerrar ventas con mas claridad.

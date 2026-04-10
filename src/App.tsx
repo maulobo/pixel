@@ -19,9 +19,12 @@ export default function App() {
   const setLoading = useCatalogStore((s) => s.setLoading);
   const setError = useCatalogStore((s) => s.setError);
   const loading = useCatalogStore((s) => s.loading);
+  const error = useCatalogStore((s) => s.error);
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
+    console.log("[App] SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
+    console.log("[App] CLIENT_ID:", import.meta.env.VITE_CLIENT_ID);
     setLoading(true);
     Promise.all([fetchCatalog(), fetchConfig(), fetchCategorias()])
       .then(([catalog, config, categorias]) => {
@@ -40,6 +43,13 @@ export default function App() {
   return (
     <div className="min-h-screen text-[var(--text)]">
       {!isAdminRoute && <Navbar />}
+      {!isAdminRoute && error && (
+        <div className="max-w-6xl mx-auto px-6 pt-4">
+          <div className="rounded-[1.5rem] border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        </div>
+      )}
       <CartDrawer />
       <Routes>
         <Route path="/" element={<HomePage />} />

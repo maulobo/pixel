@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router";
 import { useMemo, useState, useEffect } from "react";
 import { useCatalogStore } from "../store/catalogStore";
+import type { Categoria } from "../types";
 
-const EMPTY: string[] = [];
+const EMPTY: Categoria[] = [];
 
 function CartIcon() {
   return (
@@ -64,13 +65,8 @@ export default function Navbar() {
               <span className="w-9 h-9 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center text-sm font-bold">
                 P
               </span>
-              <span className="flex flex-col leading-none">
-                <span className="brand-heading text-base font-semibold text-white">
-                  {storeName}
-                </span>
-                <span className="text-[10px] uppercase tracking-[0.18em] text-white/48">
-                  importados y tecnologia
-                </span>
+              <span className="brand-heading text-base font-semibold text-white leading-none">
+                {storeName}
               </span>
             </Link>
 
@@ -78,11 +74,11 @@ export default function Navbar() {
             <div className="hidden sm:flex flex-1 items-center justify-center gap-2 overflow-x-auto no-scrollbar px-3">
               {categorias.map((cat) => (
                 <Link
-                  key={cat}
-                  to={`/catalogo?categoria=${cat}`}
-                  className={linkClass(activeCategoria === cat)}
+                  key={cat.nombre}
+                  to={`/catalogo?categoria=${cat.nombre}`}
+                  className={linkClass(activeCategoria === cat.nombre)}
                 >
-                  {cat}
+                  {cat.nombre}
                 </Link>
               ))}
               <Link
@@ -161,16 +157,16 @@ export default function Navbar() {
           <div className="flex flex-col gap-1 mt-4">
             {categorias.map((cat, i) => (
               <Link
-                key={cat}
-                to={`/catalogo?categoria=${cat}`}
+                key={cat.nombre}
+                to={`/catalogo?categoria=${cat.nombre}`}
                 onClick={() => setMenuOpen(false)}
                 style={{ animationDelay: `${i * 40}ms` }}
                 className={`flex items-center justify-between py-4 border-b border-white/[0.07] text-lg font-medium animate-rise ${
-                  activeCategoria === cat ? "text-white" : "text-white/70"
+                  activeCategoria === cat.nombre ? "text-white" : "text-white/70"
                 }`}
               >
-                {cat}
-                {activeCategoria === cat && (
+                {cat.nombre}
+                {activeCategoria === cat.nombre && (
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
                 )}
               </Link>

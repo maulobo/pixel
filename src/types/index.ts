@@ -2,22 +2,21 @@ export interface Modelo {
   modelo_id: string;
   categoria: string;
   nombre: string;
-  descripcion_general: string;
-  specs: string;
+  descripcion: string;
+  precio: number;
   imagen_principal: string;
+  imagen_2: string | null;
+  imagen_3: string | null;
 }
 
 export interface Unidad {
   unidad_id: string;
   modelo_id: string;
-  color: string;
-  capacidad: string;
-  bateria: number;
-  condicion: string;
-  precio: number;
-  descripcion_particular: string;
   disponible: boolean;
-  imagen_url: string;
+  atributos: Record<string, string>;
+  imagen_1: string | null;
+  imagen_2: string | null;
+  imagen_3: string | null;
 }
 
 export interface UnidadConModelo extends Unidad {
@@ -34,6 +33,11 @@ export interface Banner {
   foto: string;
 }
 
+export interface Categoria {
+  nombre: string;
+  imagen: string | null;
+}
+
 export interface SiteConfig {
   nombre_tienda: string;
   hero_badge: string;
@@ -43,7 +47,9 @@ export interface SiteConfig {
   instagram: string;
   email: string;
   color_primario: string;
-  categorias: string[];
+  variante_keys: string[];
+  variante_labels: Record<string, string>;
+  categorias: Categoria[];
   banners: Banner[];
 }
 
