@@ -151,8 +151,8 @@ export default function Navbar() {
       {/* Mobile menu overlay */}
       {menuOpen && (
         <div
-          className="sm:hidden fixed inset-0 z-40 bg-[#0b1220]/98 backdrop-blur-xl flex flex-col pt-16 px-6 pb-10"
-          style={{ top: "72px" }}
+          className="sm:hidden fixed z-40 bg-[#0b1220]/98 backdrop-blur-xl flex flex-col px-6 pb-6 rounded-[1.4rem] border border-white/8 shadow-[0_24px_48px_-38px_rgba(15,23,42,0.95)]"
+          style={{ top: "78px", left: "12px", right: "12px" }}
         >
           <div className="flex flex-col gap-1 mt-4">
             {categorias.map((cat, i) => (

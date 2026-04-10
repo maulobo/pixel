@@ -53,8 +53,8 @@ export default function HomePage() {
             <div className="absolute -bottom-24 left-[-20px] h-64 w-64 rounded-full bg-[#7dd3fc]/12 blur-3xl" />
 
             <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-              <div>
-                <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="text-center lg:text-left">
+                <div className="flex flex-wrap justify-center lg:justify-start items-center gap-3 mb-6">
                   {config?.hero_badge && (
                     <p className="pill-muted text-[11px] md:text-xs font-extrabold text-[var(--primary)] uppercase tracking-[0.22em]">
                       <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
@@ -66,7 +66,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <h1 className="brand-heading text-5xl md:text-7xl font-bold text-[var(--text)] mb-5 leading-[0.94] max-w-3xl">
+                <h1 className="brand-heading text-4xl md:text-7xl font-bold text-[var(--text)] mb-5 leading-[0.94] max-w-3xl mx-auto lg:mx-0">
                   {config?.hero_titulo ?? "Tecnologia que entra por los ojos."}
                 </h1>
                 <p className="text-lg md:text-xl text-[var(--muted)] mb-8 max-w-2xl leading-relaxed">
@@ -74,7 +74,7 @@ export default function HomePage() {
                     "Telefonos, notebooks y productos importados presentados con una estetica mas premium, clara y confiable para ayudar a vender mejor."}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-4 mb-8">
+                <div className="flex flex-wrap justify-center lg:justify-start items-center gap-4 mb-8">
                   <Link
                     to="/catalogo"
                     className="inline-flex items-center gap-2 bg-[var(--primary)] text-white text-base font-semibold px-8 py-3 rounded-full hover:bg-[var(--primary-strong)] transition-colors shadow-lg shadow-[#0a84ff4d]"
@@ -90,7 +90,7 @@ export default function HomePage() {
                   </Link>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap justify-center lg:justify-start gap-3">
                   <span className="pill-muted text-sm text-[var(--text)]">
                     Presentacion mas premium
                   </span>
@@ -103,7 +103,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="relative min-h-[420px] lg:min-h-[520px]">
+              <div className="hidden lg:block relative min-h-[420px] lg:min-h-[520px]">
                 <div className="absolute inset-x-8 top-8 bottom-0 rounded-[2.4rem] bg-gradient-to-b from-[#f6fbff] to-[#dfeeff] shadow-[0_35px_80px_-50px_rgba(15,23,42,0.4)]" />
 
                 {heroUnits[1] && (
