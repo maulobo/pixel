@@ -11,6 +11,7 @@ export default function CartPage() {
   const varianteKeys = useCatalogStore((s) => s.config?.variante_keys ?? []);
   const removeFromCart = useCatalogStore((s) => s.removeFromCart);
   const clearCart = useCatalogStore((s) => s.clearCart);
+  const tradeIn = useCatalogStore((s) => s.tradeIn);
   const [note, setNote] = useState("");
 
   const items = useMemo(
@@ -20,7 +21,8 @@ export default function CartPage() {
         .filter((item): item is UnidadConModelo => Boolean(item)),
     [cart, catalog],
   );
-  const total = items.reduce((sum, item) => sum + item.modelo.precio, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.modelo.precio, 0);
+  const total = Math.max(0, subtotal - (tradeIn?.valor ?? 0));
   const whatsappUrl =
     items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note) : "#";
 
@@ -149,10 +151,32 @@ export default function CartPage() {
               <span className="font-semibold text-[var(--text)]">{items.length}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Total estimado</span>
+              <span>Subtotal</span>
               <span className="font-semibold text-[var(--text)]">
-                ${total.toLocaleString("es-AR")}
+                ${subtotal.toLocaleString("es-AR")}
               </span>
+            </div>
+            {tradeIn && (
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <span>
+                    {tradeIn.modelo} {tradeIn.storage} · {tradeIn.condicion}
+                  </span>
+                  <button
+                    onClick={clearTradeIn}
+                    className="text-left text-[#b42318] hover:text-[#912018] text-xs font-semibold transition-colors"
+                  >
+                    Quitar
+                  </button>
+                </div>
+                <span className="font-semibold text-[#0a7a4a]">
+                  −${tradeIn.valor.toLocaleString("es-AR")}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between border-t border-[var(--line)] pt-3 font-bold text-[var(--text)]">
+              <span>Total a pagar</span>
+              <span>${total.toLocaleString("es-AR")}</span>
             </div>
           </div>
 
