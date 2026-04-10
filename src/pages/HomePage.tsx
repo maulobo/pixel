@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router";
 import { useCatalogStore } from "../store/catalogStore";
 import DotGrid from "../components/DotGrid";
+import TradeInWidget from "../components/TradeInWidget";
 
 export default function HomePage() {
   const catalog = useCatalogStore((s) => s.catalog);
@@ -226,6 +227,24 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Trade-In Cotizador */}
+      <section className="max-w-6xl mx-auto px-6 pb-10">
+        <div className="flex flex-col items-center mb-8 text-center">
+          <span className="text-xs font-bold text-[var(--primary)] uppercase tracking-[0.2em] mb-3">
+            Parte de pago
+          </span>
+          <h2 className="brand-heading text-3xl md:text-4xl font-bold text-[var(--text)]">
+            ¿Tenés un iPhone para dar en parte de pago?
+          </h2>
+          <p className="text-[var(--muted)] max-w-xl mt-3">
+            Seleccioná el modelo, almacenamiento y estado y te decimos cuánto vale.
+          </p>
+        </div>
+        <div className="max-w-2xl mx-auto">
+          <TradeInWidget />
+        </div>
+      </section>
 
       {/* Banner Usados / Reacondicionados */}
       <section className="max-w-6xl mx-auto px-6 pb-10">
