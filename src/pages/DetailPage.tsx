@@ -6,7 +6,7 @@ import { getCommercialState } from "../lib/condition";
 import { getUnitPrice } from "../lib/pricing";
 import { buildUnitWhatsAppUrl } from "../lib/whatsapp";
 import type { UnidadConModelo } from "../types";
-import TradeInWidget from "../components/TradeInWidget";
+import TradeInWizard from "../components/TradeInWizard";
 
 function TradeInModal({ onClose }: { onClose: () => void }) {
   return (
@@ -28,8 +28,8 @@ function TradeInModal({ onClose }: { onClose: () => void }) {
             ✕
           </button>
         </div>
-        <div className="px-4 pb-6">
-          <TradeInWidget onApplied={onClose} />
+        <div className="px-6 pb-8">
+          <TradeInWizard onApplied={onClose} />
         </div>
       </div>
     </div>
