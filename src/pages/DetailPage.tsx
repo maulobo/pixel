@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router";
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useCatalogStore } from "../store/catalogStore";
 import { getCommercialState } from "../lib/condition";
 import { getUnitPrice } from "../lib/pricing";
@@ -194,7 +195,7 @@ function TradeInButton() {
           </button>
         )}
       </div>
-      {open && <TradeInModal onClose={() => setOpen(false)} />}
+      {open && createPortal(<TradeInModal onClose={() => setOpen(false)} />, document.body)}
     </>
   );
 }
