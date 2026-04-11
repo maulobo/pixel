@@ -549,6 +549,8 @@ export default function DetailPage() {
               </p>
             </div>
 
+            <TradeInButton />
+
             <div className="grid gap-3 pt-6 border-t border-[var(--line)]">
               <a
                 href={buildUnitWhatsAppUrl(activeUnidad, whatsapp)}
@@ -573,7 +575,6 @@ export default function DetailPage() {
             </div>
           </div>
 
-          <TradeInButton />
         </aside>
       </div>
     </main>
