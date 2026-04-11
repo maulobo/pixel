@@ -178,7 +178,7 @@ function syncAll() {
 }
 
 // Columnas estándar de unidades — el resto va al JSONB atributos
-var UNIDAD_STANDARD_COLS = ["unidad_id", "modelo_id", "disponible", "imagen_1", "imagen_2", "imagen_3", "imagen_principal", "descripcion", "precio"];
+var UNIDAD_STANDARD_COLS = ["unidad_id", "modelo_id", "disponible", "imagen_1", "imagen_2", "imagen_3", "imagen_principal", "precio"];
 
 function buildUnidadesData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
