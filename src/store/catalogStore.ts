@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SiteConfig, UnidadConModelo } from "../types";
+import type { TradeinData } from "../lib/tradein";
 
 interface Filters {
   categoria: string;
@@ -16,6 +17,7 @@ interface TradeIn {
   modelo: string;
   storage: string;
   condicion: string;
+  bateria: string;
   valor: number;
 }
 
@@ -28,8 +30,10 @@ interface CatalogStore {
   cart: string[];
   isCartOpen: boolean;
   tradeIn: TradeIn | null;
+  tradeinData: TradeinData | null;
   setTradeIn: (t: TradeIn) => void;
   clearTradeIn: () => void;
+  setTradeinData: (data: TradeinData) => void;
   setCatalog: (catalog: UnidadConModelo[]) => void;
   setConfig: (config: SiteConfig) => void;
   setLoading: (loading: boolean) => void;
@@ -66,6 +70,7 @@ export const useCatalogStore = create<CatalogStore>()(
       cart: [],
       isCartOpen: false,
       tradeIn: null,
+      tradeinData: null,
 
       setCatalog: (catalog) => set({ catalog }),
       setConfig: (config) => set({ config }),
@@ -94,6 +99,7 @@ export const useCatalogStore = create<CatalogStore>()(
       toggleCartDrawer: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
       setTradeIn: (t) => set({ tradeIn: t }),
       clearTradeIn: () => set({ tradeIn: null }),
+      setTradeinData: (data) => set({ tradeinData: data }),
     }),
     {
       name: "pixel-cart",
