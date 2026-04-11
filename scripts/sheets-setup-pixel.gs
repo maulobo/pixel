@@ -444,8 +444,9 @@ function syncPaleta() {
 }
 
 function syncCotizador() {
-  // Lee de la hoja "cotizador_modelos" y escribe en la tabla "tradein_modelos"
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Lee de la hoja "cotizador_modelos" y escribe en la tabla "tradein_modelos"
   var sheetModelos = ss.getSheetByName("cotizador_modelos");
   if (sheetModelos && sheetModelos.getLastRow() >= 2) {
     var modelosData = buildTableData_fromSheet(sheetModelos, "modelo");
@@ -453,7 +454,6 @@ function syncCotizador() {
     insertTable("tradein_modelos", modelosData);
   }
 
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("cotizador_ajustes");
   if (!sheet || sheet.getLastRow() < 2) return;
 
