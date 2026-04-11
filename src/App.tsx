@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from "react-router";
 import { useEffect } from "react";
 import { useCatalogStore } from "./store/catalogStore";
 import { fetchCatalog, fetchConfig, fetchCategorias, fetchTradeInData } from "./lib/supabase";
+import { cacheGet, cacheSet } from "./lib/cache";
 import Navbar from "./components/Navbar";
 import CartDrawer from "./components/CartDrawer";
 import Footer from "./components/Footer";
@@ -24,14 +25,33 @@ export default function App() {
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
-    console.log("[App] SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
-    console.log("[App] CLIENT_ID:", import.meta.env.VITE_CLIENT_ID);
+    const CACHE_KEY = `pixel_data_${import.meta.env.VITE_CLIENT_ID}`;
+
+    type AppData = {
+      catalog: Awaited<ReturnType<typeof fetchCatalog>>;
+      config: Awaited<ReturnType<typeof fetchConfig>>;
+      categorias: Awaited<ReturnType<typeof fetchCategorias>>;
+      tradeinData: Awaited<ReturnType<typeof fetchTradeInData>>;
+    };
+
+    const cached = cacheGet<AppData>(CACHE_KEY);
+    if (cached) {
+      setCatalog(cached.catalog);
+      setConfig({ ...cached.config, categorias: cached.categorias });
+      setTradeinData(cached.tradeinData);
+      if (cached.config.color_primario) {
+        document.documentElement.style.setProperty("--primary", cached.config.color_primario);
+      }
+      return;
+    }
+
     setLoading(true);
     Promise.all([fetchCatalog(), fetchConfig(), fetchCategorias(), fetchTradeInData()])
       .then(([catalog, config, categorias, tradeinData]) => {
         setCatalog(catalog);
         setConfig({ ...config, categorias });
         setTradeinData(tradeinData);
+        cacheSet(CACHE_KEY, { catalog, config, categorias, tradeinData });
         if (config.color_primario) {
           document.documentElement.style.setProperty("--primary", config.color_primario);
         }
