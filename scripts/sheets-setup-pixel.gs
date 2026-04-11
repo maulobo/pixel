@@ -11,7 +11,7 @@ var SUPABASE_URL = props.getProperty("SUPABASE_URL");
 var SUPABASE_KEY = props.getProperty("SUPABASE_SERVICE_KEY");
 var CLIENT_ID = props.getProperty("CLIENT_ID");
 
-var SYNCABLE = ["modelos", "unidades", "config", "categorias", "paleta"];
+var SYNCABLE = ["modelos", "unidades", "config", "categorias", "paleta", "cotizador_modelos", "cotizador_ajustes"];
 
 // =============================================================
 // MENÚ
@@ -160,6 +160,7 @@ function runSync() {
   if (pending["config"]) syncConfig();
   if (pending["categorias"]) syncCategorias();
   if (pending["paleta"]) syncPaleta();
+  if (pending["cotizador_modelos"] || pending["cotizador_ajustes"]) syncCotizador();
 }
 
 // =============================================================
@@ -171,10 +172,11 @@ function syncAll() {
   syncConfig();
   syncCategorias();
   syncPaleta();
+  syncCotizador();
 }
 
 // Columnas estándar de unidades — el resto va al JSONB atributos
-var UNIDAD_STANDARD_COLS = ["unidad_id", "modelo_id", "disponible", "imagen_1", "imagen_2", "imagen_3"];
+var UNIDAD_STANDARD_COLS = ["unidad_id", "modelo_id", "disponible", "imagen_1", "imagen_2", "imagen_3", "imagen_principal", "descripcion", "precio"];
 
 function buildUnidadesData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -439,4 +441,46 @@ function syncPaleta() {
 
   deleteTable("paleta");
   insertTable("paleta", data);
+}
+
+function syncCotizador() {
+  syncTable("tradein_modelos", "modelo");
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("cotizador_ajustes");
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  var headers = sheet
+    .getRange(1, 1, 1, sheet.getLastColumn())
+    .getValues()[0]
+    .map(function (h) { return String(h).trim().toLowerCase(); });
+
+  var rows = sheet
+    .getRange(2, 1, sheet.getLastRow() - 1, headers.length)
+    .getValues();
+
+  var tipoIdx = headers.indexOf("tipo");
+  var nombreIdx = headers.indexOf("nombre");
+  var seen = {};
+  var data = [];
+
+  for (var i = 0; i < rows.length; i++) {
+    var tipo = String(rows[i][tipoIdx]).trim();
+    var nombre = String(rows[i][nombreIdx]).trim();
+    if (!tipo || !nombre) continue;
+    var key = tipo + "|" + nombre;
+    if (seen[key]) continue;
+    seen[key] = true;
+
+    var obj = { client_id: CLIENT_ID, orden: i };
+    headers.forEach(function (h, idx) {
+      if (!h) return;
+      var val = rows[i][idx];
+      obj[h] = val === "" || val === undefined ? null : val;
+    });
+    data.push(obj);
+  }
+
+  deleteTable("tradein_ajustes");
+  insertTable("tradein_ajustes", data);
 }
