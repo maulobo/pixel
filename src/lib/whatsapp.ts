@@ -1,4 +1,5 @@
 import type { UnidadConModelo } from "../types";
+import { getUnitPrice } from "./pricing";
 
 function encodeMessage(message: string) {
   return encodeURIComponent(message);
@@ -16,7 +17,7 @@ export function buildCartWhatsAppUrl(
   items: UnidadConModelo[],
   whatsapp: string,
   note?: string,
-  tradeIn?: { modelo: string; storage: string; condicion: string; valor: number } | null,
+  tradeIn?: { modelo: string; storage: string; condicion: string; bateria: string; valor: number } | null,
 ) {
   const lines = items.map((unidad, index) => {
     const attrs = Object.entries(unidad.atributos)
@@ -26,13 +27,13 @@ export function buildCartWhatsAppUrl(
       `${index + 1}. ${unidad.modelo.nombre}`,
       ...attrs,
       `ref: ${unidad.unidad_id}`,
-      `$${unidad.modelo.precio.toLocaleString("es-AR")}`,
+      `$${getUnitPrice(unidad).toLocaleString("es-AR")}`,
     ].filter(Boolean);
 
     return `- ${parts.join(" · ")}`;
   });
 
-  const subtotal = items.reduce((sum, item) => sum + item.modelo.precio, 0);
+  const subtotal = items.reduce((sum, item) => sum + getUnitPrice(item), 0);
   const total = Math.max(0, subtotal - (tradeIn?.valor ?? 0));
   const sections = [
     "Hola! Quiero consultar por estos productos:",
@@ -43,7 +44,7 @@ export function buildCartWhatsAppUrl(
 
   if (tradeIn) {
     sections.push(
-      `iPhone a dar en parte de pago: ${tradeIn.modelo} ${tradeIn.storage} · ${tradeIn.condicion} (−$${tradeIn.valor.toLocaleString("es-AR")})`,
+      `iPhone a dar en parte de pago: ${tradeIn.modelo} ${tradeIn.storage} · ${tradeIn.condicion} · Batería ${tradeIn.bateria} (−$${tradeIn.valor.toLocaleString("es-AR")})`,
       "",
     );
   }
