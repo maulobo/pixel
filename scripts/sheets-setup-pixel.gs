@@ -444,7 +444,14 @@ function syncPaleta() {
 }
 
 function syncCotizador() {
-  syncTable("tradein_modelos", "modelo");
+  // Lee de la hoja "cotizador_modelos" y escribe en la tabla "tradein_modelos"
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetModelos = ss.getSheetByName("cotizador_modelos");
+  if (sheetModelos && sheetModelos.getLastRow() >= 2) {
+    var modelosData = buildTableData_fromSheet(sheetModelos, "modelo");
+    deleteTable("tradein_modelos");
+    insertTable("tradein_modelos", modelosData);
+  }
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("cotizador_ajustes");
@@ -483,4 +490,32 @@ function syncCotizador() {
 
   deleteTable("tradein_ajustes");
   insertTable("tradein_ajustes", data);
+}
+
+function buildTableData_fromSheet(sheet, idCol) {
+  var headers = sheet
+    .getRange(1, 1, 1, sheet.getLastColumn())
+    .getValues()[0]
+    .map(function (h) { return String(h).trim().toLowerCase(); });
+  var rows = sheet
+    .getRange(2, 1, sheet.getLastRow() - 1, headers.length)
+    .getValues();
+
+  var seen = {};
+  var data = [];
+  var idIdx = headers.indexOf(idCol);
+
+  for (var i = 0; i < rows.length; i++) {
+    var id = String(rows[i][idIdx]).trim();
+    if (!id || seen[id]) continue;
+    seen[id] = true;
+    var obj = { client_id: CLIENT_ID };
+    headers.forEach(function (h, idx) {
+      if (!h) return;
+      var val = rows[i][idx];
+      obj[h] = val === "" || val === undefined ? null : val;
+    });
+    data.push(obj);
+  }
+  return data;
 }
