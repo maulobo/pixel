@@ -1,55 +1,49 @@
-// Base prices in ARS per model (128GB, Excelente condition as reference)
-const BASE_PRICES: Record<string, number> = {
-  "iPhone X":         120_000,
-  "iPhone XR":        140_000,
-  "iPhone XS":        160_000,
-  "iPhone XS Max":    180_000,
-  "iPhone 11":        200_000,
-  "iPhone 11 Pro":    260_000,
-  "iPhone 11 Pro Max":290_000,
-  "iPhone 12":        300_000,
-  "iPhone 12 Mini":   270_000,
-  "iPhone 12 Pro":    370_000,
-  "iPhone 12 Pro Max":420_000,
-  "iPhone 13":        420_000,
-  "iPhone 13 Mini":   370_000,
-  "iPhone 13 Pro":    520_000,
-  "iPhone 13 Pro Max":580_000,
-  "iPhone 14":        560_000,
-  "iPhone 14 Plus":   610_000,
-  "iPhone 14 Pro":    720_000,
-  "iPhone 14 Pro Max":800_000,
-  "iPhone 15":        720_000,
-  "iPhone 15 Plus":   790_000,
-  "iPhone 15 Pro":    900_000,
-  "iPhone 15 Pro Max":1_000_000,
-};
+export interface TradeinModelo {
+  modelo: string;
+  precio_base: number;
+}
 
-const STORAGE_MULTIPLIER: Record<string, number> = {
-  "64GB":  0.92,
-  "128GB": 1.00,
-  "256GB": 1.10,
-  "512GB": 1.22,
-  "1TB":   1.35,
-};
+export interface TradeinAjuste {
+  tipo: string;
+  nombre: string;
+  multiplicador: number;
+  orden: number;
+}
 
-const CONDICION_MULTIPLIER: Record<string, number> = {
-  "Excelente": 1.00,
-  "Bueno":     0.78,
-  "Regular":   0.55,
-  "Roto":      0.25,
-};
+export interface TradeinData {
+  modelos: TradeinModelo[];
+  ajustes: TradeinAjuste[];
+}
 
-export const IPHONE_MODELOS = Object.keys(BASE_PRICES);
+export function getModelos(data: TradeinData): string[] {
+  return data.modelos.map((m) => m.modelo);
+}
 
-export const STORAGE_OPTIONS = ["64GB", "128GB", "256GB", "512GB", "1TB"];
+export function getAjusteOptions(data: TradeinData, tipo: string): string[] {
+  return data.ajustes
+    .filter((a) => a.tipo === tipo)
+    .sort((a, b) => a.orden - b.orden)
+    .map((a) => a.nombre);
+}
 
-export const CONDICION_OPTIONS = ["Excelente", "Bueno", "Regular", "Roto"];
+export function cotizar(
+  data: TradeinData,
+  modelo: string,
+  storage: string,
+  condicion: string,
+  bateria: string,
+): number {
+  const modeloData = data.modelos.find((m) => m.modelo === modelo);
+  if (!modeloData) return 0;
 
-export function cotizar(modelo: string, storage: string, condicion: string): number {
-  const base = BASE_PRICES[modelo];
-  const storageMult = STORAGE_MULTIPLIER[storage];
-  const condicionMult = CONDICION_MULTIPLIER[condicion];
-  if (!base || !storageMult || !condicionMult) return 0;
-  return Math.round(base * storageMult * condicionMult);
+  const getMult = (tipo: string, nombre: string) =>
+    data.ajustes.find((a) => a.tipo === tipo && a.nombre === nombre)?.multiplicador ?? 0;
+
+  const storageMult = getMult("storage", storage);
+  const condicionMult = getMult("condicion", condicion);
+  const bateriaMult = getMult("bateria", bateria);
+
+  if (!storageMult || !condicionMult || !bateriaMult) return 0;
+
+  return Math.round(modeloData.precio_base * storageMult * condicionMult * bateriaMult);
 }
