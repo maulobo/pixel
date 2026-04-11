@@ -1,5 +1,6 @@
 import { useCatalogStore } from "../store/catalogStore";
 import { getCommercialState } from "../lib/condition";
+import { getUnitPrice } from "../lib/pricing";
 
 export default function Filters() {
   const catalog = useCatalogStore((s) => s.catalog);
@@ -17,7 +18,7 @@ export default function Filters() {
   ).length;
   const usadosCount = catalog.length - nuevosCount;
 
-  const precios = catalog.map((u) => u.modelo.precio);
+  const precios = catalog.map(getUnitPrice);
   const maxPrecio = precios.length ? Math.max(...precios) : 9999999;
 
   const hasBateria = catalog.some((u) => u.atributos.bateria);

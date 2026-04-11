@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useCatalogStore } from "../store/catalogStore";
+import { getUnitPrice } from "../lib/pricing";
 import { buildCartWhatsAppUrl } from "../lib/whatsapp";
 import type { UnidadConModelo } from "../types";
 
@@ -50,7 +51,7 @@ export default function CartDrawer() {
         .filter((item): item is UnidadConModelo => Boolean(item)),
     [cart, catalog],
   );
-  const subtotal = items.reduce((sum, item) => sum + item.modelo.precio, 0);
+  const subtotal = items.reduce((sum, item) => sum + getUnitPrice(item), 0);
   const total = Math.max(0, subtotal - (tradeIn?.valor ?? 0));
   const whatsappUrl =
     items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note, tradeIn) : "#";
@@ -168,7 +169,7 @@ export default function CartDrawer() {
                       </p>
                       <div className="mt-3 flex items-center justify-between gap-3">
                         <p className="text-base font-extrabold text-[var(--text)]">
-                          ${unidad.modelo.precio.toLocaleString("es-AR")}
+                          ${getUnitPrice(unidad).toLocaleString("es-AR")}
                         </p>
                         <button
                           onClick={() => removeFromCart(unidad.unidad_id)}
@@ -181,6 +182,35 @@ export default function CartDrawer() {
                   </div>
                 </article>
               ))}
+
+              {tradeIn && (
+                <article className="rounded-[1.5rem] border border-[#d1fae5] bg-[#f0fdf4]/80 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#059669] mb-1">
+                        Parte de pago
+                      </p>
+                      <p className="text-sm font-bold text-[var(--text)] truncate">
+                        {tradeIn.modelo} {tradeIn.storage}
+                      </p>
+                      <p className="text-xs text-[var(--muted)] mt-0.5">
+                        {tradeIn.condicion} · Batería {tradeIn.bateria}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-extrabold text-[#059669]">
+                        −${tradeIn.valor.toLocaleString("es-AR")}
+                      </p>
+                      <button
+                        onClick={clearTradeIn}
+                        className="text-xs font-semibold text-[#b42318] hover:text-[#912018] transition-colors mt-1"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              )}
             </div>
 
             <div className="border-t border-[var(--line)] px-6 py-5 bg-white/55">

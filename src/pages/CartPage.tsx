@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
+import { getUnitPrice } from "../lib/pricing";
 import { useCatalogStore } from "../store/catalogStore";
 import { buildCartWhatsAppUrl } from "../lib/whatsapp";
 import type { UnidadConModelo } from "../types";
@@ -22,7 +23,7 @@ export default function CartPage() {
         .filter((item): item is UnidadConModelo => Boolean(item)),
     [cart, catalog],
   );
-  const subtotal = items.reduce((sum, item) => sum + item.modelo.precio, 0);
+  const subtotal = items.reduce((sum, item) => sum + getUnitPrice(item), 0);
   const total = Math.max(0, subtotal - (tradeIn?.valor ?? 0));
   const whatsappUrl =
     items.length > 0 && whatsapp ? buildCartWhatsAppUrl(items, whatsapp, note, tradeIn) : "#";
@@ -81,6 +82,33 @@ export default function CartPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         <section className="space-y-4">
+          {tradeIn && (
+            <article className="rounded-[1.75rem] border border-[#d1fae5] bg-[#f0fdf4]/80 p-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[#059669] mb-1">
+                  Parte de pago
+                </p>
+                <p className="text-base font-bold text-[var(--text)]">
+                  {tradeIn.modelo} {tradeIn.storage}
+                </p>
+                <p className="text-sm text-[var(--muted)] mt-0.5">
+                  {tradeIn.condicion} · Batería {tradeIn.bateria}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-xl font-extrabold text-[#059669]">
+                  −${tradeIn.valor.toLocaleString("es-AR")}
+                </p>
+                <button
+                  onClick={clearTradeIn}
+                  className="mt-1 inline-flex items-center justify-center rounded-full border border-[#fecaca] bg-[#fff1f2] px-4 py-2 text-sm font-semibold text-[#b42318] hover:bg-[#ffe4e8] transition-colors"
+                >
+                  Quitar
+                </button>
+              </div>
+            </article>
+          )}
+
           {items.map((unidad) => (
             <article
               key={unidad.unidad_id}
@@ -115,7 +143,7 @@ export default function CartPage() {
                   </div>
 
                   <p className="text-xl font-extrabold text-[var(--text)]">
-                    ${unidad.modelo.precio.toLocaleString("es-AR")}
+                    ${getUnitPrice(unidad).toLocaleString("es-AR")}
                   </p>
                 </div>
 

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { useCatalogStore } from "../store/catalogStore";
 import { getCommercialState } from "../lib/condition";
+import { getUnitPrice } from "../lib/pricing";
 import Filters from "../components/Filters";
 import DeviceCard from "../components/DeviceCard";
 import type { ModeloGroup } from "../types";
@@ -29,7 +30,8 @@ export default function CatalogPage() {
       if (filters.categoria && u.modelo.categoria !== filters.categoria) return false;
       if (filters.modelo && u.modelo_id !== filters.modelo) return false;
       if (filters.color && u.atributos.color !== filters.color) return false;
-      if (u.modelo.precio < filters.precioMin || u.modelo.precio > filters.precioMax) return false;
+      const price = getUnitPrice(u);
+      if (price < filters.precioMin || price > filters.precioMax) return false;
       const bateria = Number(u.atributos.bateria ?? 0);
       if (filters.bateriaMin > 0 && bateria < filters.bateriaMin) return false;
       if (filters.condicion) {

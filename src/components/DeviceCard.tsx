@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { getGroupMinPrice } from "../lib/pricing";
 import type { ModeloGroup } from "../types";
 
 interface Props {
@@ -10,7 +11,7 @@ export default function DeviceCard({ group }: Props) {
 
   const uniqueColors = [...new Set(unidades.map((u) => u.atributos.color).filter(Boolean))];
   const uniqueCapacidades = [...new Set(unidades.map((u) => u.atributos.capacidad).filter(Boolean))];
-  const minPrecio = modelo.precio;
+  const minPrecio = getGroupMinPrice(group);
   const hasVariants = uniqueColors.length > 1 || uniqueCapacidades.length > 1;
 
   return (
