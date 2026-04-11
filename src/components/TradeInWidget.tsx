@@ -142,7 +142,7 @@ function ChoiceButton({
   );
 }
 
-export default function TradeInWidget() {
+export default function TradeInWidget({ onApplied }: { onApplied?: () => void } = {}) {
   const tradeIn = useCatalogStore((s) => s.tradeIn);
   const setTradeIn = useCatalogStore((s) => s.setTradeIn);
   const clearTradeIn = useCatalogStore((s) => s.clearTradeIn);
@@ -168,6 +168,7 @@ export default function TradeInWidget() {
   function handleAplicar() {
     if (!allSelected || valor === 0) return;
     setTradeIn({ modelo, storage, condicion, bateria, valor });
+    onApplied?.();
   }
 
   function handleCambiar() {
