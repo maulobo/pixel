@@ -311,6 +311,16 @@ export async function fetchUnidad(
   return normalizeCatalogRow(data as Record<string, unknown>);
 }
 
+export async function fetchCacheVersion(): Promise<string | null> {
+  const { data } = await supabase
+    .from("config")
+    .select("value")
+    .eq("client_id", CLIENT_ID)
+    .eq("key", "cache_version")
+    .single();
+  return data?.value ?? null;
+}
+
 export async function fetchTradeInData(): Promise<TradeinData> {
   const [modelosRes, ajustesRes] = await Promise.all([
     supabase
@@ -323,6 +333,9 @@ export async function fetchTradeInData(): Promise<TradeinData> {
       .eq("client_id", CLIENT_ID)
       .order("orden"),
   ]);
+
+  console.log("[fetchTradeInData] modelos:", modelosRes.data?.length, modelosRes.error);
+  console.log("[fetchTradeInData] ajustes:", ajustesRes.data?.length, ajustesRes.error);
 
   return {
     modelos: (modelosRes.data ?? []) as TradeinModelo[],

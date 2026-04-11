@@ -161,6 +161,7 @@ function runSync() {
   if (pending["categorias"]) syncCategorias();
   if (pending["paleta"]) syncPaleta();
   if (pending["cotizador_modelos"] || pending["cotizador_ajustes"]) syncCotizador();
+  bumpCacheVersion();
 }
 
 // =============================================================
@@ -173,6 +174,7 @@ function syncAll() {
   syncCategorias();
   syncPaleta();
   syncCotizador();
+  bumpCacheVersion();
 }
 
 // Columnas estándar de unidades — el resto va al JSONB atributos
@@ -490,6 +492,25 @@ function syncCotizador() {
 
   deleteTable("tradein_ajustes");
   insertTable("tradein_ajustes", data);
+}
+
+function bumpCacheVersion() {
+  var version = new Date().getTime().toString();
+  UrlFetchApp.fetch(
+    SUPABASE_URL + "/rest/v1/config?on_conflict=key,client_id",
+    {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY,
+        Prefer: "resolution=merge-duplicates",
+      },
+      payload: JSON.stringify([{ client_id: CLIENT_ID, key: "cache_version", value: version }]),
+      muteHttpExceptions: true,
+    }
+  );
+  Logger.log("cache_version bumped: " + version);
 }
 
 function buildTableData_fromSheet(sheet, idCol) {

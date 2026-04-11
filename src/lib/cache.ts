@@ -1,4 +1,4 @@
-const TTL_MS = 60 * 60 * 1000; // 1 hora
+const TTL_MS = 24 * 60 * 60 * 1000; // 24 horas (seguro de emergencia — cache_version es la fuente de verdad)
 
 interface CacheEntry<T> {
   data: T;

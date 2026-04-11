@@ -1,7 +1,7 @@
 import { Routes, Route, useLocation } from "react-router";
 import { useEffect } from "react";
 import { useCatalogStore } from "./store/catalogStore";
-import { fetchCatalog, fetchConfig, fetchCategorias, fetchTradeInData } from "./lib/supabase";
+import { fetchCatalog, fetchConfig, fetchCategorias, fetchTradeInData, fetchCacheVersion } from "./lib/supabase";
 import { cacheGet, cacheSet } from "./lib/cache";
 import Navbar from "./components/Navbar";
 import CartDrawer from "./components/CartDrawer";
@@ -26,6 +26,7 @@ export default function App() {
 
   useEffect(() => {
     const CACHE_KEY = `pixel_data_${import.meta.env.VITE_CLIENT_ID}`;
+    const VERSION_KEY = `pixel_version_${import.meta.env.VITE_CLIENT_ID}`;
 
     type AppData = {
       catalog: Awaited<ReturnType<typeof fetchCatalog>>;
@@ -34,30 +35,44 @@ export default function App() {
       tradeinData: Awaited<ReturnType<typeof fetchTradeInData>>;
     };
 
-    const cached = cacheGet<AppData>(CACHE_KEY);
-    if (cached) {
-      setCatalog(cached.catalog);
-      setConfig({ ...cached.config, categorias: cached.categorias });
-      setTradeinData(cached.tradeinData);
-      if (cached.config.color_primario) {
-        document.documentElement.style.setProperty("--primary", cached.config.color_primario);
+    function applyData(data: AppData) {
+      setCatalog(data.catalog);
+      setConfig({ ...data.config, categorias: data.categorias });
+      setTradeinData(data.tradeinData);
+      if (data.config.color_primario) {
+        document.documentElement.style.setProperty("--primary", data.config.color_primario);
       }
-      return;
     }
 
-    setLoading(true);
-    Promise.all([fetchCatalog(), fetchConfig(), fetchCategorias(), fetchTradeInData()])
-      .then(([catalog, config, categorias, tradeinData]) => {
-        setCatalog(catalog);
-        setConfig({ ...config, categorias });
-        setTradeinData(tradeinData);
+    async function load() {
+      // 1 request liviano: traer solo cache_version de config
+      const remoteVersion = await fetchCacheVersion();
+      const cachedVersion = localStorage.getItem(VERSION_KEY);
+      const cached = cacheGet<AppData>(CACHE_KEY);
+
+      if (cached && remoteVersion && cachedVersion === remoteVersion) {
+        // cache válido y versión igual → carga instantánea
+        applyData(cached);
+        return;
+      }
+
+      // versión cambió o no hay cache → refetchear todo
+      setLoading(true);
+      try {
+        const [catalog, config, categorias, tradeinData] = await Promise.all([
+          fetchCatalog(), fetchConfig(), fetchCategorias(), fetchTradeInData(),
+        ]);
+        applyData({ catalog, config, categorias, tradeinData });
         cacheSet(CACHE_KEY, { catalog, config, categorias, tradeinData });
-        if (config.color_primario) {
-          document.documentElement.style.setProperty("--primary", config.color_primario);
-        }
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
+        if (remoteVersion) localStorage.setItem(VERSION_KEY, remoteVersion);
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void load();
   }, [setCatalog, setConfig, setLoading, setError, setTradeinData]);
 
   if (loading) return <Loader />;
