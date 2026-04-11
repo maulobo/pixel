@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Banner, Categoria, SiteConfig, UnidadConModelo } from "../types";
+import type { TradeinData, TradeinModelo, TradeinAjuste } from "./tradein";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
@@ -78,12 +79,13 @@ function normalizeCatalogRow(item: Record<string, unknown>): UnidadConModelo {
   const condicion = asNonEmptyString(item.condicion) ?? atributos.condicion;
   const descripcionParticular =
     asNonEmptyString(item.descripcion_particular) ?? atributos.descripcion_particular;
-  const precio =
-    asNumber((item.modelo as { precio?: unknown } | null | undefined)?.precio) ??
+  const modelo = (item.modelo as Record<string, unknown> | null | undefined) ?? {};
+  const modelPrice =
+    asNumber((item.modelo as { precio?: unknown } | null | undefined)?.precio) ?? 0;
+  const unitPrice =
     asNumber(item.precio) ??
     asNumber(rawAtributos.precio) ??
     0;
-  const modelo = (item.modelo as Record<string, unknown> | null | undefined) ?? {};
 
   return {
     ...(item as unknown as UnidadConModelo),
@@ -94,7 +96,7 @@ function normalizeCatalogRow(item: Record<string, unknown>): UnidadConModelo {
       ...(bateria ? { bateria } : {}),
       ...(condicion ? { condicion } : {}),
       ...(descripcionParticular ? { descripcion_particular: descripcionParticular } : {}),
-      ...(precio > 0 ? { precio: String(precio) } : {}),
+      ...(unitPrice > 0 ? { precio: String(unitPrice) } : {}),
     },
     imagen_1: asNonEmptyString(item.imagen_1) ?? asNonEmptyString(item.imagen_url) ?? null,
     imagen_2: asNonEmptyString(item.imagen_2) ?? null,
@@ -106,7 +108,7 @@ function normalizeCatalogRow(item: Record<string, unknown>): UnidadConModelo {
         asNonEmptyString(modelo.descripcion_general) ??
         descripcionParticular ??
         "",
-      precio,
+      precio: modelPrice,
       imagen_principal:
         asNonEmptyString(modelo.imagen_principal) ??
         asNonEmptyString(item.imagen_1) ??
@@ -262,16 +264,27 @@ export async function fetchConfig(): Promise<SiteConfig> {
       subtitulo: map[`banner_${n}_subtitulo`] ?? "",
     }));
 
-  const varianteKeys = map["variante_keys"]
-    ? map["variante_keys"].split("|").map((k: string) => k.trim()).filter(Boolean)
-    : [];
+  // Formato: filtro_1_nombre / filtro_1_titulo, filtro_2_nombre / filtro_2_titulo, ...
+  const filtroIndexes = Array.from(
+    new Set(
+      Object.keys(map)
+        .map((k) => k.match(/^filtro_(\d+)_/)?.[1])
+        .filter(Boolean),
+    ),
+  )
+    .map(Number)
+    .sort((a, b) => a - b);
 
+  const varianteKeys: string[] = [];
   const varianteLabels: Record<string, string> = {};
-  if (map["variante_labels"]) {
-    map["variante_labels"].split("|").forEach((label: string, i: number) => {
-      if (varianteKeys[i]) varianteLabels[varianteKeys[i]] = label.trim();
-    });
-  }
+
+  filtroIndexes.forEach((n) => {
+    const nombre = map[`filtro_${n}_nombre`]?.trim();
+    if (nombre) {
+      varianteKeys.push(nombre);
+      varianteLabels[nombre] = map[`filtro_${n}_titulo`]?.trim() ?? nombre;
+    }
+  });
 
   return {
     ...DEFAULT_CONFIG,
@@ -296,4 +309,23 @@ export async function fetchUnidad(
   if (error) return null;
 
   return normalizeCatalogRow(data as Record<string, unknown>);
+}
+
+export async function fetchTradeInData(): Promise<TradeinData> {
+  const [modelosRes, ajustesRes] = await Promise.all([
+    supabase
+      .from("tradein_modelos")
+      .select("modelo, precio_base")
+      .eq("client_id", CLIENT_ID),
+    supabase
+      .from("tradein_ajustes")
+      .select("tipo, nombre, multiplicador, orden")
+      .eq("client_id", CLIENT_ID)
+      .order("orden"),
+  ]);
+
+  return {
+    modelos: (modelosRes.data ?? []) as TradeinModelo[],
+    ajustes: (ajustesRes.data ?? []) as TradeinAjuste[],
+  };
 }
