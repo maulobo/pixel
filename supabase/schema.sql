@@ -43,6 +43,22 @@ CREATE TABLE IF NOT EXISTS categorias (
   PRIMARY KEY (nombre, client_id)
 );
 
+CREATE TABLE IF NOT EXISTS tradein_modelos (
+  client_id   UUID     NOT NULL,
+  modelo      TEXT     NOT NULL,
+  precio_base NUMERIC  NOT NULL,
+  PRIMARY KEY (modelo, client_id)
+);
+
+CREATE TABLE IF NOT EXISTS tradein_ajustes (
+  client_id     UUID     NOT NULL,
+  tipo          TEXT     NOT NULL,
+  nombre        TEXT     NOT NULL,
+  multiplicador NUMERIC  NOT NULL,
+  orden         INTEGER  DEFAULT 0,
+  PRIMARY KEY (tipo, nombre, client_id)
+);
+
 -- ─── RLS ─────────────────────────────────────────────────────
 -- La anon key (frontend) solo puede leer.
 -- La service key (Apps Script) bypasea RLS y puede escribir todo.
@@ -83,3 +99,14 @@ CREATE POLICY "authenticated read" ON config FOR SELECT TO authenticated USING (
 CREATE INDEX IF NOT EXISTS idx_unidades_modelo_id  ON unidades (modelo_id, client_id);
 CREATE INDEX IF NOT EXISTS idx_unidades_disponible ON unidades (disponible, client_id);
 CREATE INDEX IF NOT EXISTS idx_categorias_orden    ON categorias (client_id, orden);
+
+ALTER TABLE tradein_modelos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tradein_ajustes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anon read" ON tradein_modelos;
+DROP POLICY IF EXISTS "anon read" ON tradein_ajustes;
+CREATE POLICY "anon read" ON tradein_modelos FOR SELECT TO anon USING (true);
+CREATE POLICY "anon read" ON tradein_ajustes FOR SELECT TO anon USING (true);
+DROP POLICY IF EXISTS "authenticated read" ON tradein_modelos;
+DROP POLICY IF EXISTS "authenticated read" ON tradein_ajustes;
+CREATE POLICY "authenticated read" ON tradein_modelos FOR SELECT TO authenticated USING (true);
+CREATE POLICY "authenticated read" ON tradein_ajustes FOR SELECT TO authenticated USING (true);
