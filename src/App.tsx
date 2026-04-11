@@ -1,7 +1,7 @@
 import { Routes, Route, useLocation } from "react-router";
 import { useEffect } from "react";
 import { useCatalogStore } from "./store/catalogStore";
-import { fetchCatalog, fetchConfig, fetchCategorias } from "./lib/supabase";
+import { fetchCatalog, fetchConfig, fetchCategorias, fetchTradeInData } from "./lib/supabase";
 import Navbar from "./components/Navbar";
 import CartDrawer from "./components/CartDrawer";
 import Footer from "./components/Footer";
@@ -18,6 +18,7 @@ export default function App() {
   const setConfig = useCatalogStore((s) => s.setConfig);
   const setLoading = useCatalogStore((s) => s.setLoading);
   const setError = useCatalogStore((s) => s.setError);
+  const setTradeinData = useCatalogStore((s) => s.setTradeinData);
   const loading = useCatalogStore((s) => s.loading);
   const error = useCatalogStore((s) => s.error);
   const isAdminRoute = location.pathname.startsWith("/admin");
@@ -26,17 +27,18 @@ export default function App() {
     console.log("[App] SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
     console.log("[App] CLIENT_ID:", import.meta.env.VITE_CLIENT_ID);
     setLoading(true);
-    Promise.all([fetchCatalog(), fetchConfig(), fetchCategorias()])
-      .then(([catalog, config, categorias]) => {
+    Promise.all([fetchCatalog(), fetchConfig(), fetchCategorias(), fetchTradeInData()])
+      .then(([catalog, config, categorias, tradeinData]) => {
         setCatalog(catalog);
         setConfig({ ...config, categorias });
+        setTradeinData(tradeinData);
         if (config.color_primario) {
           document.documentElement.style.setProperty("--primary", config.color_primario);
         }
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [setCatalog, setConfig, setLoading, setError]);
+  }, [setCatalog, setConfig, setLoading, setError, setTradeinData]);
 
   if (loading) return <Loader />;
 
